@@ -240,7 +240,7 @@
       document.getElementById('answer-container').innerHTML = `<div class="loading-card"><i class="ti ti-stars"></i>Looking through Quran, Hadith and scholars...</div>`;
 
       try {
-        const res = await fetch('/.netlify/functions/ask', {
+        const res = await fetch('/api/ask', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question: q, lang: currentLang })
