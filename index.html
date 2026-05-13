@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tanya Islam — Islamic Q&A</title>
+  <meta name="description" content="Ask any question about Islam — answered from Quran, Hadith, and scholarly opinion. Available in English and Bahasa Indonesia." />
+
+  <!-- Open Graph / WhatsApp / Social sharing -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tanya-islam.netlify.app/" />
+  <meta property="og:title" content="Tanya Islam — Islamic Q&A" />
+  <meta property="og:description" content="Ask any question about Islam — answered from Quran, Hadith & scholars. English & Bahasa Indonesia." />
+  <meta property="og:image" content="https://tanya-islam.netlify.app/og-image.svg" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" content="Tanya Islam — Islamic Q&A" />
+  <meta property="twitter:description" content="Ask any question about Islam — answered from Quran, Hadith & scholars." />
+  <meta property="twitter:image" content="https://tanya-islam.netlify.app/og-image.svg" />
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #faf7f2; color: #2c2416; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .geo-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.06; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a84c' stroke-width='0.8'%3E%3Cpolygon points='30,2 56,18 56,42 30,58 4,42 4,18'/%3E%3Cpolygon points='30,10 50,22 50,38 30,50 10,38 10,22'/%3E%3Cline x1='30' y1='2' x2='30' y2='10'/%3E%3Cline x1='56' y1='18' x2='50' y2='22'/%3E%3Cline x1='56' y1='42' x2='50' y2='38'/%3E%3Cline x1='30' y1='58' x2='30' y2='50'/%3E%3Cline x1='4' y1='42' x2='10' y2='38'/%3E%3Cline x1='4' y1='18' x2='10' y2='22'/%3E%3C/g%3E%3C/svg%3E"); z-index: 0; }
+    .container { position: relative; z-index: 1; width: 100%; max-width: 920px; padding: 2rem 1.5rem 3rem; }
+
+    /* NAV */
+    .topnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .nav-logo span { font-size: 18px; font-weight: 500; color: #a07830; letter-spacing: 0.05em; }
+    .nav-links { display: flex; gap: 6px; }
+    .nav-link { padding: 6px 14px; border-radius: 999px; border: 1px solid #ddd0b8; background: transparent; color: #8a7050; font-size: 12px; text-decoration: none; transition: all 0.2s; font-family: 'Inter', sans-serif; cursor: pointer; }
+    .nav-link:hover, .nav-link.active { border-color: #c9a84c; color: #a07830; background: #fdf3dc; }
+
+    /* HEADER */
+    .header { text-align: center; margin-bottom: 2rem; }
+    .crescent { font-size: 42px; line-height: 1; }
+    .title { font-size: 28px; font-weight: 500; color: #a07830; margin-top: 8px; letter-spacing: 0.06em; }
+    .arabic-title { font-family: 'Amiri', serif; font-size: 22px; color: #b89050; direction: rtl; margin-top: 4px; }
+    .subtitle { font-size: 12px; color: #a09070; margin-top: 6px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .gold-line { height: 1px; background: linear-gradient(to right, transparent, #c9a84c66, transparent); margin: 1.5rem 0; }
+
+    /* LANG */
+    .lang-toggle { display: flex; gap: 8px; justify-content: center; margin-bottom: 1.5rem; }
+    .lang-btn { padding: 6px 20px; border-radius: 999px; border: 1px solid #ddd0b8; background: transparent; cursor: pointer; font-size: 13px; color: #8a7050; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .lang-btn.active { background: #fdf3dc; border-color: #c9a84c; color: #a07830; }
+
+    /* INPUT */
+    .input-row { display: flex; gap: 10px; margin-bottom: 1rem; }
+    .q-input { flex: 1; padding: 12px 16px; border-radius: 10px; border: 1px solid #ddd0b8; background: #fff; color: #2c2416; font-size: 15px; outline: none; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
+    .q-input::placeholder { color: #c0b090; }
+    .q-input:focus { border-color: #c9a84c; }
+    .ask-btn { padding: 12px 24px; border-radius: 10px; border: none; background: #c9a84c; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif; transition: opacity 0.2s; }
+    .ask-btn:hover { opacity: 0.9; }
+    .ask-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* SUGGESTIONS */
+    .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem; }
+    .sug-btn { padding: 6px 14px; border-radius: 999px; border: 1px solid #ddd0b8; background: #fff; color: #8a7050; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .sug-btn:hover { border-color: #c9a84c; color: #a07830; background: #fdf3dc; }
+
+    /* LAYOUT */
+    .main-cols { display: grid; grid-template-columns: 1fr 240px; gap: 1.25rem; }
+    @media (max-width: 640px) { .main-cols { grid-template-columns: 1fr; } .topnav { flex-direction: column; gap: 12px; } }
+
+    /* ANSWER */
+    .answer-card { background: #fff; border: 1px solid #e8d8b8; border-radius: 12px; padding: 1.5rem; animation: fadeIn 0.3s ease; box-shadow: 0 2px 12px rgba(180,140,60,0.08); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .q-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #a09070; margin-bottom: 6px; }
+    .q-text { font-size: 15px; color: #a07830; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px solid #f0e0c0; }
+    .section { margin-bottom: 1rem; }
+    .section:last-child { margin-bottom: 0; }
+    .sec-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #b89050; margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .sec-label i { font-size: 14px; }
+    .sec-text { font-size: 14px; color: #4a3820; line-height: 1.75; }
+    .arabic-verse { font-family: 'Amiri', serif; font-size: 22px; direction: rtl; color: #a07830; text-align: right; margin-bottom: 8px; line-height: 2; }
+    .ref-pill { display: inline-block; background: #fdf3dc; border: 1px solid #e8d0a0; color: #a07830; font-size: 11px; padding: 3px 10px; border-radius: 999px; margin-right: 4px; margin-top: 4px; }
+    .action-row { display: flex; gap: 8px; margin-top: 1.25rem; }
+    .act-btn { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #ddd0b8; background: transparent; color: #8a7050; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+    .act-btn:hover { border-color: #c9a84c; color: #a07830; background: #fdf3dc; }
+    .empty-state { text-align: center; padding: 3rem 1rem; color: #c0b090; font-size: 14px; line-height: 1.7; }
+    .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; color: #e8d8b8; }
+
+    /* LOADING */
+    .loading-card { background: #fff; border: 1px solid #e8d8b8; border-radius: 12px; padding: 2rem; text-align: center; color: #a09070; font-size: 14px; }
+    .loading-card i { display: block; font-size: 32px; margin-bottom: 10px; color: #ddd0b8; }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(201,168,76,0.2); border-top-color: #c9a84c; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* HISTORY */
+    .history-panel { background: #fff8ee; border: 1px solid #e8d8b8; border-radius: 12px; padding: 1.25rem; }
+    .hist-title { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #a09070; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+    .hist-title i { font-size: 14px; }
+    .hist-empty { font-size: 12px; color: #c0b090; text-align: center; padding: 1.5rem 0; }
+    .hist-item { padding: 10px 0; border-bottom: 1px solid #f0e0c0; cursor: pointer; transition: all 0.15s; }
+    .hist-item:last-child { border-bottom: none; }
+    .hist-item:hover .hist-q { color: #a07830; }
+    .hist-q { font-size: 12px; color: #8a7050; line-height: 1.5; margin-bottom: 3px; }
+    .hist-time { font-size: 10px; color: #c0b090; }
+    .hist-clear { width: 100%; margin-top: 10px; padding: 6px; border-radius: 8px; border: 1px solid #ddd0b8; background: transparent; color: #c0b090; font-size: 11px; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+    .hist-clear:hover { color: #8a7050; border-color: #c9a84c; }
+
+    /* FOOTER */
+    .disclaimer { font-size: 11px; color: #c0b090; text-align: center; margin-top: 1.5rem; line-height: 1.7; }
+    .footer { text-align: center; margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid #e8d8b8; }
+    .footer-links { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; }
+    .footer-link { font-size: 12px; color: #a09070; text-decoration: none; transition: color 0.2s; }
+    .footer-link:hover { color: #a07830; }
+    .footer-copy { font-size: 11px; color: #c0b090; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); background: #c9a84c; color: #fff; padding: 8px 20px; border-radius: 999px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="geo-bg"></div>
+  <div class="toast" id="toast">Copied!</div>
+
+  <div class="container">
+    <nav class="topnav">
+      <a class="nav-logo" href="index.html">
+        <span>☪ Tanya Islam</span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link active" href="index.html">Q&amp;A</a>
+        <a class="nav-link" href="halal.html">Halal Checker</a>
+        <a class="nav-link" href="hub.html">All Tools</a>
+      </div>
+    </nav>
+
+    <div class="header">
+      <div class="crescent">☪</div>
+      <div class="title">Tanya Islam</div>
+      <div class="arabic-title">اسأل عن الإسلام</div>
+      <div class="subtitle">Quran · Hadith · Scholars · EN / ID</div>
+    </div>
+
+    <div class="gold-line"></div>
+
+    <div class="lang-toggle">
+      <button class="lang-btn active" onclick="setLang('en')" id="btn-en">English</button>
+      <button class="lang-btn" onclick="setLang('id')" id="btn-id">Indonesia</button>
+    </div>
+
+    <div class="input-row">
+      <input class="q-input" type="text" id="question-input" placeholder="Ask your question..." onkeydown="if(event.key==='Enter')askQuestion()" />
+      <button class="ask-btn" onclick="askQuestion()" id="ask-btn">
+        <i class="ti ti-send"></i> Ask
+      </button>
+    </div>
+
+    <div class="suggestions" id="suggestions"></div>
+
+    <div class="main-cols">
+      <div id="answer-container">
+        <div class="empty-state">
+          <i class="ti ti-mosque"></i>
+          Ask any question about Islam — prayer, halal, ethics, family, fiqh, and more.
+        </div>
+      </div>
+      <div class="history-panel">
+        <div class="hist-title"><i class="ti ti-history"></i> History</div>
+        <div id="history-list"><div class="hist-empty">No questions yet</div></div>
+        <button class="hist-clear" id="clear-btn" onclick="clearHistory()" style="display:none">Clear history</button>
+      </div>
+    </div>
+
+    <div class="disclaimer" id="disclaimer">
+      For general guidance only. Consult a qualified scholar for personal rulings (fatwa).
+    </div>
+
+    <div class="footer">
+      <div class="footer-links">
+        <a class="footer-link" href="hub.html">Islamic Tools Hub</a>
+        <a class="footer-link" href="halal.html">Halal Checker</a>
+      </div>
+      <div class="footer-copy">© 2025 Tanya Islam · tanya-islam.netlify.app</div>
+    </div>
+  </div>
+
+  <script>
+
+    let currentLang = 'en';
+    let history = JSON.parse(localStorage.getItem('tanyaislam_history') || '[]');
+
+    const suggestions = {
+      en: ["Is music allowed in Islam?", "What breaks the fast?", "Is cryptocurrency halal?", "How many times do Muslims pray?", "Tell me about Prophet Yusuf", "Story of Prophet Ibrahim & the fire", "What is the Hijra of Prophet Muhammad ﷺ?", "Miracles of Prophet Isa in Islam"],
+      id: ["Apakah musik halal dalam Islam?", "Apa yang membatalkan puasa?", "Apakah kripto halal?", "Berapa kali Muslim sholat?", "Ceritakan tentang Nabi Yusuf", "Kisah Nabi Ibrahim dan api", "Apa itu Hijrah Nabi Muhammad ﷺ?", "Mukjizat Nabi Isa dalam Islam"]
+    };
+    const placeholders = { en: "Ask your question...", id: "Tulis pertanyaan Anda..." };
+    const disclaimers = {
+      en: "For general guidance only. Consult a qualified scholar for personal rulings (fatwa).",
+      id: "Hanya untuk panduan umum. Konsultasikan dengan ulama untuk hukum pribadi (fatwa)."
+    };
+
+    function setLang(lang) {
+      currentLang = lang;
+      document.getElementById('btn-en').className = 'lang-btn' + (lang==='en'?' active':'');
+      document.getElementById('btn-id').className = 'lang-btn' + (lang==='id'?' active':'');
+      document.getElementById('question-input').placeholder = placeholders[lang];
+      document.getElementById('disclaimer').textContent = disclaimers[lang];
+      renderSuggestions();
+    }
+
+    function renderSuggestions() {
+      document.getElementById('suggestions').innerHTML = suggestions[currentLang]
+        .map(s => `<button class="sug-btn" onclick="fillAndAsk('${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
+    }
+
+    function fillAndAsk(t) { document.getElementById('question-input').value = t; askQuestion(); }
+
+    function saveHistory() { localStorage.setItem('tanyaislam_history', JSON.stringify(history.slice(-50))); }
+
+    function renderHistory() {
+      const list = document.getElementById('history-list');
+      const btn = document.getElementById('clear-btn');
+      if (!history.length) { list.innerHTML = '<div class="hist-empty">No questions yet</div>'; btn.style.display='none'; return; }
+      btn.style.display = 'block';
+      list.innerHTML = history.slice().reverse().map((h,i) => `
+        <div class="hist-item" onclick="loadHistory(${history.length-1-i})">
+          <div class="hist-q">${h.q}</div>
+          <div class="hist-time">${h.time}</div>
+        </div>`).join('');
+    }
+
+    function loadHistory(idx) { renderAnswer(history[idx].q, history[idx].data); }
+    function clearHistory() { history=[]; saveHistory(); renderHistory(); }
+
+    async function askQuestion() {
+      const input = document.getElementById('question-input');
+      const q = input.value.trim();
+      if (!q) return;
+      const btn = document.getElementById('ask-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Asking...';
+      document.getElementById('answer-container').innerHTML = `<div class="loading-card"><i class="ti ti-stars"></i>Looking through Quran, Hadith and scholars...</div>`;
+
+      try {
+        const res = await fetch('/.netlify/functions/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question: q, lang: currentLang })
+        });
+        const parsed = await res.json();
+        if (parsed.error) throw new Error(parsed.error);
+        const timeStr = new Date().toLocaleString([],{dateStyle:'short',timeStyle:'short'});
+        history.push({q, data: parsed, time: timeStr});
+        saveHistory(); renderHistory(); renderAnswer(q, parsed);
+      } catch(e) {
+        document.getElementById('answer-container').innerHTML = `<div class="answer-card"><div class="sec-text" style="color:#8a4040">Could not load answer. Please try again.</div></div>`;
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-send"></i> Ask';
+      input.value = '';
+    }
+
+    function renderAnswer(q, d) {
+      const arabicBlock = d.quran_arabic ? `<div class="arabic-verse">${d.quran_arabic}</div>` : '';
+      const quranSec = d.quran ? `<div class="section"><div class="sec-label"><i class="ti ti-book"></i> Quran</div>${arabicBlock}<div class="sec-text">${d.quran}</div></div>` : '';
+      const hadithSec = d.hadith ? `<div class="section"><div class="sec-label"><i class="ti ti-scroll"></i> Hadith</div><div class="sec-text">${d.hadith}</div></div>` : '';
+      const scholarSec = d.scholars ? `<div class="section"><div class="sec-label"><i class="ti ti-user-star"></i> Scholar opinion</div><div class="sec-text">${d.scholars}</div></div>` : '';
+      const refs = (d.refs||[]).map(r=>`<span class="ref-pill">${r}</span>`).join('');
+      document.getElementById('answer-container').innerHTML = `
+        <div class="answer-card">
+          <div class="q-label">Question</div>
+          <div class="q-text">${q}</div>
+          <div class="section"><div class="sec-label"><i class="ti ti-message-circle"></i> Answer</div><div class="sec-text">${d.answer}</div></div>
+          ${quranSec}${hadithSec}${scholarSec}
+          ${refs?`<div style="margin-top:12px">${refs}</div>`:''}
+          <div class="action-row">
+            <button class="act-btn" onclick="copyAnswer(${JSON.stringify(JSON.stringify(d))})"><i class="ti ti-copy"></i> Copy</button>
+            <button class="act-btn" onclick="document.getElementById('answer-container').innerHTML='<div class=empty-state><i class=ti\ ti-mosque></i>Ask another question</div>'"><i class="ti ti-refresh"></i> New</button>
+          </div>
+        </div>`;
+    }
+
+    function copyAnswer(jsonStr) {
+      const d = JSON.parse(jsonStr);
+      const lines = [d.answer, d.quran_arabic?`Quran (Arabic): ${d.quran_arabic}`:'', d.quran?`Quran: ${d.quran}`:'', d.hadith?`Hadith: ${d.hadith}`:'', d.scholars?`Scholars: ${d.scholars}`:''].filter(Boolean).join('\n\n');
+      navigator.clipboard.writeText(lines).then(()=>showToast()).catch(()=>{});
+    }
+
+    function showToast() { const t=document.getElementById('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+    renderSuggestions();
+    renderHistory();
+  </script>
+</body>
+</html>

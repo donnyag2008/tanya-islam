@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tanya Islam — Islamic Tools Hub</title>
+  <meta name="description" content="Free Islamic tools — Halal Checker and Islamic Q&A powered by AI. English & Bahasa Indonesia." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tanya-islam.netlify.app/hub.html" />
+  <meta property="og:title" content="Tanya Islam — Islamic Tools Hub" />
+  <meta property="og:description" content="Free Islamic tools — Halal Checker and Islamic Q&A powered by AI." />
+  <meta property="og:image" content="https://tanya-islam.netlify.app/og-image.svg" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Inter:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #080b10; color: #e8dcc8; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+    .geo-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.035; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23c9a84c' stroke-width='0.8'%3E%3Cpolygon points='30,2 56,18 56,42 30,58 4,42 4,18'/%3E%3Cpolygon points='30,10 50,22 50,38 30,50 10,38 10,22'/%3E%3Cline x1='30' y1='2' x2='30' y2='10'/%3E%3Cline x1='56' y1='18' x2='50' y2='22'/%3E%3Cline x1='56' y1='42' x2='50' y2='38'/%3E%3Cline x1='30' y1='58' x2='30' y2='50'/%3E%3Cline x1='4' y1='42' x2='10' y2='38'/%3E%3Cline x1='4' y1='18' x2='10' y2='22'/%3E%3C/g%3E%3C/svg%3E"); z-index: 0; }
+    .container { position: relative; z-index: 1; width: 100%; max-width: 860px; padding: 2rem 1.5rem 4rem; }
+
+    /* NAV */
+    .topnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3rem; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+    .nav-logo span { font-size: 18px; font-weight: 500; color: #c9a84c; letter-spacing: 0.05em; }
+    .nav-links { display: flex; gap: 6px; }
+    .nav-link { padding: 6px 14px; border-radius: 999px; border: 1px solid #2a2318; background: transparent; color: #7a6a4a; font-size: 12px; text-decoration: none; transition: all 0.2s; }
+    .nav-link:hover, .nav-link.active { border-color: #c9a84c; color: #c9a84c; background: #1a1508; }
+    @media(max-width:560px){ .topnav{flex-direction:column;gap:12px;} }
+
+    /* HERO */
+    .hero { text-align: center; margin-bottom: 3.5rem; }
+    .hero-icon { font-size: 52px; line-height: 1; margin-bottom: 1rem; }
+    .hero-title { font-size: 36px; font-weight: 500; color: #c9a84c; letter-spacing: 0.04em; }
+    .hero-arabic { font-family: 'Amiri', serif; font-size: 24px; color: #7a6a4a; direction: rtl; margin-top: 6px; }
+    .hero-sub { font-size: 14px; color: #4a4030; margin-top: 10px; line-height: 1.7; }
+    .gold-line { height: 1px; background: linear-gradient(to right, transparent, #c9a84c44, transparent); margin: 2rem 0; }
+
+    /* TOOL CARDS */
+    .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 3rem; }
+    .tool-card { background: #0f1520; border: 1px solid #1e1a10; border-radius: 16px; padding: 2rem; text-decoration: none; color: inherit; display: block; transition: all 0.25s; position: relative; overflow: hidden; }
+    .tool-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, #c9a84c66, transparent); opacity: 0; transition: opacity 0.25s; }
+    .tool-card:hover { border-color: #c9a84c33; transform: translateY(-2px); }
+    .tool-card:hover::before { opacity: 1; }
+    .tool-icon { font-size: 36px; margin-bottom: 1rem; display: block; }
+    .tool-badge { display: inline-block; background: #1a1508; border: 1px solid #c9a84c44; color: #c9a84c; font-size: 10px; padding: 3px 10px; border-radius: 999px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    .tool-name { font-size: 20px; font-weight: 500; color: #c9a84c; margin-bottom: 8px; }
+    .tool-desc { font-size: 13px; color: #7a6a4a; line-height: 1.7; margin-bottom: 1.25rem; }
+    .tool-features { list-style: none; margin-bottom: 1.5rem; }
+    .tool-features li { font-size: 12px; color: #5a5040; padding: 4px 0; display: flex; align-items: center; gap: 8px; }
+    .tool-features li i { font-size: 13px; color: #c9a84c66; }
+    .tool-cta { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 8px; background: #c9a84c; color: #080b10; font-size: 13px; font-weight: 500; transition: opacity 0.2s; }
+    .tool-cta:hover { opacity: 0.9; }
+
+    /* COMING SOON */
+    .tool-card.soon { opacity: 0.5; pointer-events: none; }
+    .soon-badge { display: inline-block; background: #1a1a1a; border: 1px solid #2a2a2a; color: #4a4a4a; font-size: 10px; padding: 3px 10px; border-radius: 999px; margin-bottom: 1rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* FOOTER */
+    .footer { text-align: center; border-top: 1px solid #1a1610; padding-top: 1.5rem; }
+    .footer-copy { font-size: 11px; color: #2a2318; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <div class="geo-bg"></div>
+  <div class="container">
+
+    <nav class="topnav">
+      <a class="nav-logo" href="index.html"><span>☪ Tanya Islam</span></a>
+      <div class="nav-links">
+        <a class="nav-link" href="index.html">Q&amp;A</a>
+        <a class="nav-link" href="halal.html">Halal Checker</a>
+        <a class="nav-link active" href="hub.html">All Tools</a>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="hero-icon">☪</div>
+      <div class="hero-title">Tanya Islam</div>
+      <div class="hero-arabic">أدوات إسلامية مجانية</div>
+      <div class="hero-sub">Free AI-powered Islamic tools · Available in English &amp; Bahasa Indonesia</div>
+    </div>
+
+    <div class="gold-line"></div>
+
+    <div class="tools-grid">
+
+      <!-- Islamic Q&A -->
+      <a class="tool-card" href="index.html">
+        <span class="tool-icon">🕌</span>
+        <div class="tool-badge">AI-Powered</div>
+        <div class="tool-name">Islamic Q&amp;A</div>
+        <div class="tool-desc">Ask any question about Islam and get answers sourced from the Quran, Hadith, and scholarly opinion.</div>
+        <ul class="tool-features">
+          <li><i class="ti ti-book"></i> Quran references with Arabic text</li>
+          <li><i class="ti ti-scroll"></i> Hadith from major collections</li>
+          <li><i class="ti ti-user-star"></i> Scholar consensus &amp; opinions</li>
+          <li><i class="ti ti-history"></i> Question history saved locally</li>
+          <li><i class="ti ti-language"></i> English &amp; Bahasa Indonesia</li>
+        </ul>
+        <span class="tool-cta"><i class="ti ti-arrow-right"></i> Open Q&amp;A</span>
+      </a>
+
+      <!-- Halal Checker -->
+      <a class="tool-card" href="halal.html">
+        <span class="tool-icon">✅</span>
+        <div class="tool-badge">AI-Powered</div>
+        <div class="tool-name">Halal Checker</div>
+        <div class="tool-desc">Check whether any food, ingredient, product, or activity is halal, haram, or mashbooh according to Islamic guidelines.</div>
+        <ul class="tool-features">
+          <li><i class="ti ti-search"></i> Ingredients &amp; additives analysis</li>
+          <li><i class="ti ti-certificate"></i> Halal / Haram / Mashbooh verdict</li>
+          <li><i class="ti ti-book"></i> Quran &amp; Hadith basis</li>
+          <li><i class="ti ti-school"></i> Madhab considerations</li>
+          <li><i class="ti ti-language"></i> English &amp; Bahasa Indonesia</li>
+        </ul>
+        <span class="tool-cta"><i class="ti ti-arrow-right"></i> Open Halal Checker</span>
+      </a>
+
+      <!-- Coming Soon -->
+      <div class="tool-card soon">
+        <span class="tool-icon">🕋</span>
+        <div class="soon-badge">Coming Soon</div>
+        <div class="tool-name">Prayer Times</div>
+        <div class="tool-desc">Accurate daily prayer times based on your location, with Qibla direction and Hijri calendar.</div>
+        <ul class="tool-features">
+          <li><i class="ti ti-clock"></i> Auto location detection</li>
+          <li><i class="ti ti-compass"></i> Qibla direction</li>
+          <li><i class="ti ti-calendar"></i> Hijri date</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div class="footer-copy">
+        © 2025 Tanya Islam · tanya-islam.netlify.app<br/>
+        For general guidance only. Consult a qualified scholar for personal rulings.
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

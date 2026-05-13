@@ -1,0 +1,7 @@
+{
+  "name": "tanya-islam",
+  "version": "1.0.0",
+  "description": "AI-powered Islamic Q&A",
+  "engines": { "node": ">=18" },
+  "dependencies": {}
+}
