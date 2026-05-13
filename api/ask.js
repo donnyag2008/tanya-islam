@@ -1,3 +1,5 @@
+const https = require('https');
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,42 +16,47 @@ module.exports = async function handler(req, res) {
       ? 'Jawab dalam Bahasa Indonesia yang baik dan mudah dipahami.'
       : 'Answer in clear, simple English.';
 
-    const systemPrompt = `You are a knowledgeable Islamic scholar assistant. Answer questions about Islam concisely and helpfully.
-Topics: Islamic rulings (fiqh), halal/haram, worship (ibadah), Quran tafsir, Hadith, ethics, prophet stories and Seerah, Islamic history, scholarly opinions.
-For prophet stories: draw from Quranic accounts and authentic Hadith. Mention which Surah covers the story.
-Do NOT produce physical descriptions of any prophet.
-${langInstruction}
-Respond ONLY with a JSON object (no markdown, no code fences):
-{
-  "answer": "2-4 sentence clear answer.",
-  "quran_arabic": "Short Arabic verse if applicable. Empty string if not.",
-  "quran": "Surah name + verse + brief meaning. Empty string if not applicable.",
-  "hadith": "Collection + narrator + meaning. Empty string if not applicable.",
-  "scholars": "One sentence scholarly note. Empty string if not needed.",
-  "refs": ["ref1", "ref2"]
-}`;
+    const systemPrompt = `You are a knowledgeable Islamic scholar assistant. Answer questions about Islam concisely and helpfully. Topics: Islamic rulings (fiqh), halal/haram, worship, Quran tafsir, Hadith, ethics, prophet stories and Seerah, Islamic history, scholarly opinions. For prophet stories draw from Quranic accounts and Hadith. Do NOT describe prophets physically. ${langInstruction} Respond ONLY with a JSON object (no markdown, no code fences): {"answer":"2-4 sentence answer","quran_arabic":"Arabic verse or empty string","quran":"Surah reference or empty string","hadith":"Hadith reference or empty string","scholars":"Scholar opinion or empty string","refs":["ref1","ref2"]}`;
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: question }]
-      })
+    const requestBody = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: question }]
     });
 
-    const data = await response.json();
-    if (data.error) return res.status(500).json({ error: data.error.message });
+    const result = await new Promise((resolve, reject) => {
+      const options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(requestBody)
+        }
+      };
 
-    const raw = data.content?.find(b => b.type === 'text')?.text || '';
-    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
-    return res.status(200).json(result);
+      const req = https.request(options, (response) => {
+        let data = '';
+        response.on('data', (chunk) => { data += chunk; });
+        response.on('end', () => {
+          try { resolve(JSON.parse(data)); }
+          catch(e) { reject(new Error('Failed to parse response')); }
+        });
+      });
+
+      req.on('error', reject);
+      req.write(requestBody);
+      req.end();
+    });
+
+    if (result.error) return res.status(500).json({ error: result.error.message });
+
+    const raw = result.content?.find(b => b.type === 'text')?.text || '';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    return res.status(200).json(parsed);
 
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Analysis failed' });
