@@ -1,0 +1,9 @@
+{
+  "name": "tanya-islam",
+  "compatibility_date": "2026-07-01",
+  "main": "worker.js",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS"
+  }
+}
