@@ -149,6 +149,7 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `If RETRIEVED TAFSIR (Ibn Kathir) below is non-empty and relevant, summarize his commentary in the "tafsir" field, explicitly attributed to Ibn Kathir — do not invent commentary from any other scholar (e.g. never attribute anything to Buya Hamka or Al-Ghazali, since their commentary is not available in the retrieved sources). ` +
     `For any question of fiqh (rulings) that differs between the four Madhabs (Hanafi, Maliki, Shafi'i, Hanbali), note that scholars differ and advise consulting a qualified local scholar rather than stating a single ruling as definitive. ` +
     `IMPORTANT: the "hadith" field must be an ARRAY containing EVERY hadith listed under RETRIEVED HADITH below — one array entry per hadith, translated into the target language. Do NOT merge multiple hadith into one entry, do NOT summarize them together, and do NOT omit any of them — if 4 hadith were retrieved, return 4 array entries. Each entry should include its reference and its full text. ` +
+    `CRITICAL JSON SAFETY: this response will be parsed as JSON. When quoting speech (e.g. what the Prophet or a narrator said), ALWAYS use single quotes ' around the quoted words, never double quotes " — double quotes inside a field's text will break the JSON structure. Keep every field value on a single line with no literal line breaks inside it (use a space instead of a line break). ` +
     langInstruction +
     ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
     `{"answer":"2-4 sentence answer grounded only in the retrieved text below — if only partially related, say so and note this is the closest match available","quran_arabic":"Arabic text of the most relevant retrieved verse, or empty string if none","quran":"the retrieved Quran reference and translation used, or empty string if none","hadith":["one array entry per retrieved hadith below, each with its reference and full translated text — include ALL of them, or empty array if none"],"tafsir":"summary of Ibn Kathir's commentary if retrieved and relevant, explicitly attributed to him, or empty string if none retrieved","scholars":"brief neutral note if this touches madhab differences, or empty string","refs":["short ref strings actually used"]}`;
@@ -163,8 +164,15 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
   try {
     return JSON.parse(raw.replace(/```json|```/g, '').trim());
   } catch (e) {
-    // if Claude's JSON response is ever malformed/truncated, don't fail the whole request —
-    // fall back to a plain response built directly from the raw retrieved sources
+    // first repair attempt: collapse literal line breaks inside the response —
+    // JSON syntax doesn't care about whitespace outside strings, so this is safe,
+    // and it fixes the common case where a raw newline snuck inside a string value
+    try {
+      const cleaned = raw.replace(/```json|```/g, '').trim().replace(/\r?\n/g, ' ');
+      return JSON.parse(cleaned);
+    } catch (e2) {
+      // give up gracefully — fall back to a plain response built directly from the raw retrieved sources
+    }
     const fallbackNote = lang === 'id'
       ? 'Terjadi kendala teknis saat menyusun jawaban. Berikut sumber yang berhasil ditemukan:'
       : 'There was a technical issue composing the answer. Here are the sources that were found:';
