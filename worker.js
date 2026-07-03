@@ -160,32 +160,52 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `RETRIEVED TAFSIR (Ibn Kathir):\n${tafsirBlock}\n\n` +
     `Compose the answer using only the above retrieved sources.`;
 
-  const raw = await callClaude(env, sys, userText, 2500);
-  try {
-    return JSON.parse(raw.replace(/```json|```/g, '').trim());
-  } catch (e) {
-    // first repair attempt: collapse literal line breaks inside the response —
-    // JSON syntax doesn't care about whitespace outside strings, so this is safe,
-    // and it fixes the common case where a raw newline snuck inside a string value
-    try {
-      const cleaned = raw.replace(/```json|```/g, '').trim().replace(/\r?\n/g, ' ');
-      return JSON.parse(cleaned);
-    } catch (e2) {
-      // give up gracefully — fall back to a plain response built directly from the raw retrieved sources
-    }
-    const fallbackNote = lang === 'id'
-      ? 'Terjadi kendala teknis saat menyusun jawaban. Berikut sumber yang berhasil ditemukan:'
-      : 'There was a technical issue composing the answer. Here are the sources that were found:';
-    return {
-      answer: fallbackNote,
-      quran_arabic: quranResults[0]?.arabic || '',
-      quran: quranResults[0] ? `${quranResults[0].ref}: ${quranResults[0].text}` : '',
-      hadith: hadithResults.map(h => `${h.ref}: ${h.text}`),
-      tafsir: '',
-      scholars: '',
-      refs: [...quranResults.map(q => q.ref), ...hadithResults.map(h => h.ref)]
-    };
+  const raw = await callClaude(env, sys, userText, 4000);
+
+  function tryParse(text) {
+    try { return JSON.parse(text); } catch (e) { return null; }
   }
+
+  // stage 1: straightforward parse after stripping code fences
+  const stripped = raw.replace(/```json|```/g, '').trim();
+  let result = tryParse(stripped);
+
+  // stage 2: extract just the { ... } block in case Claude added any stray text around it
+  if (!result) {
+    const start = stripped.indexOf('{');
+    const end = stripped.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) {
+      result = tryParse(stripped.slice(start, end + 1));
+    }
+  }
+
+  // stage 3: repair common formatting slips — literal line breaks/tabs inside strings, trailing commas
+  if (!result) {
+    let repaired = stripped;
+    const start = repaired.indexOf('{');
+    const end = repaired.lastIndexOf('}');
+    if (start !== -1 && end !== -1 && end > start) repaired = repaired.slice(start, end + 1);
+    repaired = repaired.replace(/\r?\n/g, ' ').replace(/\t/g, ' ');
+    repaired = repaired.replace(/,(\s*[}\]])/g, '$1'); // remove trailing commas before } or ]
+    result = tryParse(repaired);
+  }
+
+  if (result) return result;
+
+  // give up gracefully — fall back to a plain response built directly from the raw retrieved sources
+  const untranslatedNote = lang === 'id' ? ' [teks asli Inggris]' : '';
+  const fallbackNote = lang === 'id'
+    ? 'Terjadi kendala teknis saat menyusun jawaban. Berikut sumber yang berhasil ditemukan:'
+    : 'There was a technical issue composing the answer. Here are the sources that were found:';
+  return {
+    answer: fallbackNote,
+    quran_arabic: quranResults[0]?.arabic || '',
+    quran: quranResults[0] ? `${quranResults[0].ref}: ${quranResults[0].text}` : '',
+    hadith: hadithResults.map(h => `${h.ref}: ${h.text}${untranslatedNote}`),
+    tafsir: '',
+    scholars: '',
+    refs: [...quranResults.map(q => q.ref), ...hadithResults.map(h => h.ref)]
+  };
 }
 
 async function handleAsk(request, env) {
