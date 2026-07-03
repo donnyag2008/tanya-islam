@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Halal Checker - AI-powered ingredient scanner | Tanya Islam</title>
+<meta name="description" content="Instantly check if any food product is Halal, Haram or Mashbooh. Free to use.">
+<meta name="theme-color" content="#0f1117">
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --green: #22c55e; --green-dark: #16a34a; --red: #ef4444; --amber: #f59e0b;
+    --bg: #0f1117; --surface: #1a1f2e; --border: rgba(255,255,255,0.08);
+    --text: #e8e0d4; --muted: rgba(255,255,255,0.4);
+  }
+  body { min-height:100vh; background:var(--bg); font-family:Georgia,serif; color:var(--text); }
+  .back-link { display:block; text-align:center; padding:10px; font-size:12px; color:rgba(255,255,255,0.35); text-decoration:none; background:rgba(0,0,0,0.2); }
+  .back-link:hover { color:var(--green); }
+  header { background:linear-gradient(135deg,var(--surface) 0%,var(--bg) 100%); border-bottom:1px solid var(--border); padding:36px 24px 30px; text-align:center; position:relative; overflow:hidden; }
+  header::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 20% 50%,rgba(34,197,94,0.07) 0%,transparent 60%); pointer-events:none; }
+  .lang-toggle { position:absolute; top:16px; right:16px; display:flex; background:rgba(255,255,255,0.06); border-radius:20px; padding:3px; border:1px solid var(--border); z-index:10; }
+  .lang-btn { padding:5px 12px; border:none; border-radius:16px; cursor:pointer; font-size:12px; font-family:Georgia,serif; font-weight:600; background:transparent; color:var(--muted); transition:all 0.2s; }
+  .lang-btn.active { background:var(--green); color:#0f1117; }
+  .logo { font-size:42px; margin-bottom:10px; }
+  header h1 { font-size:30px; font-weight:700; color:#fff; margin-bottom:6px; }
+  header p { font-size:14px; color:var(--muted); font-style:italic; }
+  .badges { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .badge { font-size:11px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--muted); }
+  .container { max-width:580px; margin:0 auto; padding:30px 20px 60px; }
+
+  .search-box { background:rgba(255,200,0,0.05); border:1px solid rgba(255,200,0,0.15); border-radius:12px; padding:16px; margin-bottom:24px; }
+  .search-box label { display:block; font-size:12px; color:rgba(255,200,0,0.7); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
+  .search-row { display:flex; gap:8px; }
+  .search-input { flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(255,200,0,0.2); border-radius:8px; padding:10px 14px; color:var(--text); font-size:14px; font-family:Georgia,serif; outline:none; }
+  .search-input::placeholder { color:rgba(255,255,255,0.2); }
+  .search-btn { padding:10px 16px; background:rgba(255,200,0,0.15); border:1px solid rgba(255,200,0,0.3); border-radius:8px; color:rgba(255,200,0,0.8); font-size:13px; font-family:Georgia,serif; cursor:pointer; }
+  .prev-box { margin-top:12px; display:none; }
+  .prev-title { font-size:13px; color:rgba(255,200,0,0.7); margin-bottom:10px; }
+  .prev-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .prev-card-header { display:flex; justify-content:space-between; margin-bottom:4px; }
+  .prev-card-product { font-weight:700; font-size:13px; color:#fff; }
+  .prev-card-stars { color:var(--amber); font-size:13px; margin-bottom:4px; }
+  .prev-card-comment { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.5; }
+  .prev-card-meta { font-size:11px; color:rgba(255,255,255,0.25); margin-top:4px; }
+
+  .mode-toggle { display:flex; background:rgba(255,255,255,0.05); border-radius:12px; padding:4px; margin-bottom:24px; border:1px solid var(--border); }
+  .mode-btn { flex:1; padding:11px 16px; border:none; border-radius:9px; cursor:pointer; font-size:14px; font-family:Georgia,serif; font-weight:600; transition:all 0.2s; background:transparent; color:var(--muted); }
+  .mode-btn.active { background:var(--green); color:#0f1117; }
+  .input-label { display:block; font-size:12px; color:var(--muted); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
+  textarea { width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:14px 16px; color:var(--text); font-size:14px; font-family:Georgia,serif; resize:vertical; outline:none; line-height:1.6; margin-bottom:20px; min-height:130px; }
+  textarea:focus { border-color:rgba(34,197,94,0.4); }
+  textarea::placeholder { color:rgba(255,255,255,0.2); }
+  .drop-zone { border:2px dashed rgba(255,255,255,0.15); border-radius:12px; padding:40px 20px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.03); transition:all 0.2s; margin-bottom:20px; }
+  .drop-zone:hover { border-color:var(--green); background:rgba(34,197,94,0.05); }
+  .dz-icon { font-size:42px; margin-bottom:12px; }
+  .dz-title { font-size:15px; color:rgba(255,255,255,0.6); margin-bottom:4px; }
+  .dz-sub { font-size:12px; color:rgba(255,255,255,0.3); }
+  #preview-img { max-width:100%; max-height:280px; border-radius:8px; display:block; margin:0 auto; }
+  #remove-img { margin-top:12px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); border-radius:8px; padding:6px 16px; cursor:pointer; font-size:13px; font-family:Georgia,serif; }
+  #check-btn { width:100%; padding:16px; background:var(--green); border:none; border-radius:12px; color:#0f1117; font-size:16px; font-weight:700; font-family:Georgia,serif; cursor:pointer; transition:all 0.2s; margin-bottom:24px; }
+  #check-btn:disabled { background:rgba(34,197,94,0.25); color:rgba(255,255,255,0.3); cursor:not-allowed; }
+  .error-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:14px 16px; color:var(--red); font-size:14px; margin-bottom:20px; display:none; }
+  .result-wrap { display:none; }
+  .result-inner { border-radius:16px; padding:26px 22px; animation:fadeIn 0.4s ease; }
+  .verdict-badge { text-align:center; margin-bottom:20px; }
+  .verdict-pill { display:inline-flex; align-items:center; gap:10px; border:2px solid; border-radius:50px; padding:9px 28px; }
+  .verdict-text { font-size:24px; font-weight:800; letter-spacing:2px; }
+  .confidence { margin-top:8px; font-size:12px; color:var(--muted); }
+  .summary-text { text-align:center; font-size:15px; color:rgba(255,255,255,0.8); margin:0 0 20px; line-height:1.6; font-style:italic; }
+  hr { border:none; border-top:1px solid var(--border); margin:0 0 20px; }
+  .section-title { font-size:12px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+  .flagged-item { border-radius:10px; padding:10px 14px; margin-bottom:8px; }
+  .flagged-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+  .flagged-name { font-weight:700; font-size:14px; color:#fff; }
+  .flagged-sev { font-size:11px; font-weight:700; letter-spacing:1px; }
+  .flagged-reason { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.5; }
+  .safe-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+  .safe-tag { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:20px; padding:4px 12px; font-size:13px; color:#86efac; }
+  .advice-box { background:rgba(255,255,255,0.04); border-radius:10px; padding:12px 14px; font-size:13px; color:rgba(255,255,255,0.6); line-height:1.6; border-left:3px solid; }
+  .share-row { display:flex; gap:8px; margin-top:16px; }
+  .share-btn { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--muted); font-size:13px; font-family:Georgia,serif; cursor:pointer; transition:all 0.2s; }
+  .share-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
+
+  .review-form { margin-top:24px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:16px; padding:20px; }
+  .review-form h3 { font-size:15px; color:#fff; margin-bottom:16px; }
+  .star-row { display:flex; gap:8px; margin-bottom:16px; }
+  .star { font-size:28px; cursor:pointer; color:rgba(255,255,255,0.2); transition:all 0.15s; line-height:1; }
+  .star.active { color:var(--amber); }
+  .review-inputs { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+  .review-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-size:14px; font-family:Georgia,serif; outline:none; }
+  .review-input::placeholder { color:rgba(255,255,255,0.2); }
+  textarea.review-input { min-height:80px; resize:vertical; }
+  .submit-btn { width:100%; padding:12px; background:var(--green); border:none; border-radius:10px; color:#0f1117; font-size:14px; font-weight:700; font-family:Georgia,serif; cursor:pointer; }
+  .submit-btn:disabled { background:rgba(34,197,94,0.25); color:rgba(255,255,255,0.3); cursor:not-allowed; }
+  .review-success { text-align:center; padding:12px; color:var(--green); font-size:14px; display:none; }
+
+  .reviews-section { margin-top:36px; }
+  .reviews-section h2 { font-size:18px; color:#fff; margin-bottom:16px; }
+  .review-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
+  .review-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+  .review-product { font-weight:700; font-size:14px; color:#fff; flex:1; margin-right:8px; }
+  .status-badge { font-size:11px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; }
+  .status-HALAL { background:rgba(34,197,94,0.15); color:var(--green); }
+  .status-HARAM { background:rgba(239,68,68,0.15); color:var(--red); }
+  .status-MASHBOOH { background:rgba(245,158,11,0.15); color:var(--amber); }
+  .review-stars { color:var(--amber); font-size:14px; margin-bottom:6px; }
+  .review-comment { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.6; margin-bottom:8px; }
+  .review-meta { font-size:11px; color:rgba(255,255,255,0.25); }
+  .load-more-btn { width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:14px; font-family:Georgia,serif; cursor:pointer; margin-top:8px; }
+  .no-reviews { text-align:center; padding:30px; color:var(--muted); font-size:14px; font-style:italic; }
+  .disclaimer { text-align:center; font-size:11px; color:rgba(255,255,255,0.18); margin-top:24px; line-height:1.7; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:rgba(255,255,255,0.6); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  #text-panel { display:block; }
+  #image-panel { display:none; }
+</style>
+</head>
+<body>
+<a class="back-link" href="index.html">&larr; Tanya Islam</a>
+<header>
+  <div class="lang-toggle">
+    <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" id="btn-id" onclick="setLang('id')">ID</button>
+  </div>
+  <div class="logo">&#9775;</div>
+  <h1>Halal Checker</h1>
+  <p id="hdr-sub">AI-powered Islamic dietary compliance - free to use</p>
+  <div class="badges">
+    <span class="badge">Indonesia</span><span class="badge">Malaysia</span>
+    <span class="badge">Singapore</span><span class="badge">UK</span><span class="badge">Worldwide</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="search-box">
+    <label id="lbl-search">Search previous reviews by product name</label>
+    <div class="search-row">
+      <input class="search-input" id="search-input" type="text" placeholder="e.g. Cadbury, Indomie, KitKat..." />
+      <button class="search-btn" id="search-btn" onclick="searchProduct()">Search</button>
+    </div>
+    <div class="prev-box" id="prev-box">
+      <div class="prev-title" id="prev-title"></div>
+      <div id="prev-list"></div>
+    </div>
+  </div>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-text" onclick="setMode('text')">Type Ingredients</button>
+    <button class="mode-btn" id="btn-image" onclick="setMode('image')">Upload Photo</button>
+  </div>
+
+  <div id="text-panel">
+    <label class="input-label" id="lbl-ingredients">Paste Ingredients List</label>
+    <textarea id="ingredients-text" rows="6" placeholder="e.g. Sugar, Wheat Flour, Vegetable Oil, Emulsifier (E471), Natural Flavouring, Gelatin..."></textarea>
+  </div>
+
+  <div id="image-panel">
+    <label class="input-label" id="lbl-photo">Upload Ingredients Label Photo</label>
+    <div class="drop-zone" id="drop-zone" onclick="triggerFile()" ondragover="onDragOver(event)" ondragleave="onDragLeave()" ondrop="onDrop(event)">
+      <div id="dz-placeholder">
+        <div class="dz-icon">&#128247;</div>
+        <div class="dz-title" id="dz-title-text">Tap to upload or take photo</div>
+        <div class="dz-sub">JPG, PNG, WEBP supported</div>
+      </div>
+      <div id="dz-preview" style="display:none;">
+        <img id="preview-img" src="" alt="preview" />
+        <button id="remove-img" onclick="removeImage(event)">Remove and Retake</button>
+      </div>
+    </div>
+    <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFile(this.files[0])" />
+  </div>
+
+  <button id="check-btn" onclick="runCheck()">Check Halal Status</button>
+  <div id="error-box" class="error-box"></div>
+  <div class="result-wrap" id="result-wrap"></div>
+
+  <div class="reviews-section">
+    <h2 id="community-title">Community Reviews</h2>
+    <div id="reviews-list"><div class="no-reviews" id="no-reviews-msg">No reviews yet. Be the first!</div></div>
+    <button class="load-more-btn" id="load-more-btn" onclick="loadMore()" style="display:none">Load more reviews</button>
+  </div>
+
+  <p class="disclaimer" id="disclaimer-text">For guidance only. Consult a certified Islamic scholar or look for official Halal certification: MUI (Indonesia), JAKIM (Malaysia), MUIS (Singapore), HMC/HFA (UK)</p>
+</div>
+
+<script>
+var SB_URL = 'https://qwpdgdvjgnjfzutsrxnd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3cGRnZHZqZ25qZnp1dHNyeG5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODg5NTIsImV4cCI6MjA5NDE2NDk1Mn0.XRQcALe8YDvyNbNc8nRw8HKd3HllK4JIIB0eA1y66qY';
+
+var lang = 'en';
+var mode = 'text';
+var imgData = null;
+var imgType = null;
+var lastResult = null;
+var selRating = 0;
+var offset = 0;
+var LIMIT = 5;
+
+var CFG = {
+  HALAL:    {color:'#22c55e', bg:'rgba(34,197,94,0.12)',  border:'rgba(34,197,94,0.3)'},
+  HARAM:    {color:'#ef4444', bg:'rgba(239,68,68,0.12)',  border:'rgba(239,68,68,0.3)'},
+  MASHBOOH: {color:'#f59e0b', bg:'rgba(245,158,11,0.12)', border:'rgba(245,158,11,0.3)'}
+};
+
+var TR = {
+  en: {
+    sub:'AI-powered Islamic dietary compliance - free to use',
+    modeText:'Type Ingredients', modeImg:'Upload Photo',
+    lblIng:'Paste Ingredients List', lblPhoto:'Upload Ingredients Label Photo',
+    dzTitle:'Tap to upload or take photo',
+    removeBtn:'Remove and Retake', checkBtn:'Check Halal Status', analysing:'Analysing...',
+    ingPlaceholder:'e.g. Sugar, Wheat Flour, Vegetable Oil, Emulsifier (E471), Natural Flavouring, Gelatin...',
+    confidence:'Confidence', flagged:'Flagged Ingredients', permissible:'Permissible Ingredients',
+    shareWa:'Share via WhatsApp', copyBtn:'Copy Result', copied:'Result copied!',
+    errNoText:'Please paste an ingredients list first.', errNoImg:'Please upload a photo.',
+    errConn:'Connection error. Please try again.',
+    reviewTitle:'Leave a Review', rateText:'Rate this product:',
+    reviewProduct:'Product name (e.g. Cadbury Dairy Milk)',
+    reviewComment:'Your comment (e.g. Bought at Tesco, confirmed halal)',
+    reviewCountry:'Your country (e.g. UK, Indonesia, Malaysia)',
+    submitBtn:'Submit Review', submitOk:'Thank you for your review!',
+    community:'Community Reviews', loadMore:'Load more reviews',
+    noReviews:'No reviews yet. Be the first!',
+    searchLabel:'Search previous reviews by product name',
+    searchPlaceholder:'e.g. Cadbury, Indomie, KitKat...',
+    searchBtn:'Search', searching:'Searching...',
+    searchFound:'Reviews found for', searchNone:'No previous reviews for this product. Be the first!',
+    disclaimer:'For guidance only. Consult a certified Islamic scholar or look for official Halal certification: MUI (Indonesia), JAKIM (Malaysia), MUIS (Singapore), HMC/HFA (UK)',
+    waMsg:'Halal Checker Result\n\nStatus: ', waEnd:'\n\nCheck your food at Halal Checker!'
+  },
+  id: {
+    sub:'Pemeriksa kehalalan makanan bertenaga AI - gratis digunakan',
+    modeText:'Ketik Bahan-bahan', modeImg:'Upload Foto',
+    lblIng:'Tempel Daftar Bahan-bahan', lblPhoto:'Upload Foto Label Bahan-bahan',
+    dzTitle:'Ketuk untuk upload atau ambil foto',
+    removeBtn:'Hapus dan Foto Ulang', checkBtn:'Cek Status Halal', analysing:'Sedang menganalisis...',
+    ingPlaceholder:'cth. Gula, Tepung Terigu, Minyak Sayur, Pengemulsi (E471), Perisa Alami, Gelatin...',
+    confidence:'Tingkat Keyakinan', flagged:'Bahan yang Dipertanyakan', permissible:'Bahan yang Diperbolehkan',
+    shareWa:'Bagikan via WhatsApp', copyBtn:'Salin Hasil', copied:'Hasil disalin!',
+    errNoText:'Harap tempel daftar bahan-bahan terlebih dahulu.', errNoImg:'Harap upload foto label.',
+    errConn:'Kesalahan koneksi. Silakan coba lagi.',
+    reviewTitle:'Tulis Ulasan', rateText:'Beri nilai produk ini:',
+    reviewProduct:'Nama produk (cth. Indomie Goreng)',
+    reviewComment:'Komentar Anda (cth. Beli di Alfamart, sudah terkonfirmasi halal)',
+    reviewCountry:'Negara Anda (cth. Indonesia, Malaysia)',
+    submitBtn:'Kirim Ulasan', submitOk:'Terima kasih atas ulasan Anda!',
+    community:'Ulasan Komunitas', loadMore:'Muat lebih banyak ulasan',
+    noReviews:'Belum ada ulasan. Jadilah yang pertama!',
+    searchLabel:'Cari ulasan produk berdasarkan nama',
+    searchPlaceholder:'cth. Indomie, KitKat, Cadbury...',
+    searchBtn:'Cari', searching:'Mencari...',
+    searchFound:'Ulasan ditemukan untuk', searchNone:'Belum ada ulasan untuk produk ini. Jadilah yang pertama!',
+    disclaimer:'Hanya sebagai panduan. Konsultasikan dengan ulama bersertifikat atau cari sertifikasi Halal resmi: MUI (Indonesia), JAKIM (Malaysia), MUIS (Singapura), HMC/HFA (UK)',
+    waMsg:'Hasil Cek Halal\n\nStatus: ', waEnd:'\n\nCek makanan kamu di Halal Checker!'
+  }
+};
+
+function t(key) { return TR[lang][key] || TR.en[key] || ''; }
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-en').className = 'lang-btn' + (l==='en'?' active':'');
+  document.getElementById('btn-id').className = 'lang-btn' + (l==='id'?' active':'');
+  document.getElementById('hdr-sub').textContent = t('sub');
+  document.getElementById('btn-text').textContent = t('modeText');
+  document.getElementById('btn-image').textContent = t('modeImg');
+  document.getElementById('lbl-ingredients').textContent = t('lblIng');
+  document.getElementById('lbl-photo').textContent = t('lblPhoto');
+  document.getElementById('dz-title-text').textContent = t('dzTitle');
+  document.getElementById('remove-img').textContent = t('removeBtn');
+  document.getElementById('check-btn').textContent = t('checkBtn');
+  document.getElementById('ingredients-text').placeholder = t('ingPlaceholder');
+  document.getElementById('community-title').textContent = t('community');
+  document.getElementById('no-reviews-msg').textContent = t('noReviews');
+  document.getElementById('lbl-search').textContent = t('searchLabel');
+  document.getElementById('search-input').placeholder = t('searchPlaceholder');
+  document.getElementById('search-btn').textContent = t('searchBtn');
+  document.getElementById('disclaimer-text').textContent = t('disclaimer');
+  document.documentElement.lang = l;
+}
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('text-panel').style.display = m==='text'?'block':'none';
+  document.getElementById('image-panel').style.display = m==='image'?'block':'none';
+  document.getElementById('btn-text').className = 'mode-btn'+(m==='text'?' active':'');
+  document.getElementById('btn-image').className = 'mode-btn'+(m==='image'?' active':'');
+  clearResult();
+}
+
+function triggerFile() { if (!imgData) document.getElementById('file-input').click(); }
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var url = e.target.result;
+    imgData = url.split(',')[1];
+    imgType = file.type;
+    document.getElementById('preview-img').src = url;
+    document.getElementById('dz-placeholder').style.display = 'none';
+    document.getElementById('dz-preview').style.display = 'block';
+    document.getElementById('drop-zone').style.cursor = 'default';
+    clearResult();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(e) {
+  e.stopPropagation();
+  imgData = null; imgType = null;
+  document.getElementById('preview-img').src = '';
+  document.getElementById('dz-placeholder').style.display = 'block';
+  document.getElementById('dz-preview').style.display = 'none';
+  document.getElementById('drop-zone').style.cursor = 'pointer';
+  document.getElementById('file-input').value = '';
+  clearResult();
+}
+
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').style.borderColor='#22c55e'; }
+function onDragLeave() { document.getElementById('drop-zone').style.borderColor='rgba(255,255,255,0.15)'; }
+function onDrop(e) { e.preventDefault(); onDragLeave(); handleFile(e.dataTransfer.files[0]); }
+
+function clearResult() {
+  document.getElementById('result-wrap').style.display = 'none';
+  document.getElementById('error-box').style.display = 'none';
+}
+
+function showError(msg) {
+  var el = document.getElementById('error-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function runCheck() {
+  clearResult();
+  var content;
+  if (mode === 'text') {
+    var txt = document.getElementById('ingredients-text').value.trim();
+    if (!txt) { showError(t('errNoText')); return; }
+    content = {type:'text', text:txt};
+  } else {
+    if (!imgData) { showError(t('errNoImg')); return; }
+    content = {type:'image', data:imgData, mediaType:imgType};
+  }
+  var btn = document.getElementById('check-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>' + t('analysing');
+
+  fetch('/api/check', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({content:content, lang:lang})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(res) {
+    if (res.error) { showError(res.error); return; }
+    lastResult = res;
+    renderResult(res);
+  })
+  .catch(function() { showError(t('errConn')); })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = t('checkBtn');
+  });
+}
+
+function renderResult(r) {
+  var cfg = CFG[r.status] || CFG.MASHBOOH;
+  var html = '<div class="result-inner" style="background:'+cfg.bg+';border:1px solid '+cfg.border+';">';
+  html += '<div class="verdict-badge"><div class="verdict-pill" style="border-color:'+cfg.color+';background:'+cfg.bg+';">';
+  html += '<span class="verdict-text" style="color:'+cfg.color+';">'+r.status+'</span></div>';
+  html += '<div class="confidence">'+t('confidence')+': <span style="color:'+cfg.color+';font-weight:600;">'+r.confidence+'</span></div></div>';
+  html += '<p class="summary-text">'+r.summary+'</p><hr>';
+
+  if (r.flagged && r.flagged.length) {
+    html += '<div class="section-title">'+t('flagged')+'</div>';
+    r.flagged.forEach(function(f) {
+      var h = f.severity==='HARAM';
+      html += '<div class="flagged-item" style="background:'+(h?'rgba(239,68,68,0.1)':'rgba(245,158,11,0.1)')+';border:1px solid '+(h?'rgba(239,68,68,0.25)':'rgba(245,158,11,0.25)')+';">';
+      html += '<div class="flagged-header"><span class="flagged-name">'+esc(f.ingredient)+'</span>';
+      html += '<span class="flagged-sev" style="color:'+(h?'#ef4444':'#f59e0b')+';">'+f.severity+'</span></div>';
+      html += '<div class="flagged-reason">'+esc(f.reason)+'</div></div>';
+    });
+    html += '<div style="margin-bottom:20px;"></div>';
+  }
+
+  if (r.safe && r.safe.length) {
+    html += '<div class="section-title">'+t('permissible')+'</div><div class="safe-tags">';
+    r.safe.forEach(function(s) { html += '<span class="safe-tag">'+esc(s)+'</span>'; });
+    html += '</div>';
+  }
+
+  if (r.advice) html += '<div class="advice-box" style="border-left-color:'+cfg.color+';">'+r.advice+'</div>';
+
+  html += '<div class="share-row">';
+  html += '<button class="share-btn" onclick="shareWa()">'+t('shareWa')+'</button>';
+  html += '<button class="share-btn" onclick="copyRes()">'+t('copyBtn')+'</button>';
+  html += '</div>';
+
+  html += '<div class="review-form"><h3>'+t('reviewTitle')+'</h3>';
+  html += '<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">'+t('rateText')+'</div>';
+  html += '<div class="star-row" id="star-row">';
+  for (var i=1;i<=5;i++) html += '<span class="star" onclick="setRating('+i+')" onmouseover="hoverStar('+i+')" onmouseout="unhoverStar()" data-v="'+i+'">&#9733;</span>';
+  html += '</div><div class="review-inputs">';
+  html += '<input class="review-input" id="r-product" type="text" placeholder="'+t('reviewProduct')+'" />';
+  html += '<textarea class="review-input" id="r-comment" placeholder="'+t('reviewComment')+'"></textarea>';
+  html += '<input class="review-input" id="r-country" type="text" placeholder="'+t('reviewCountry')+'" />';
+  html += '</div><button class="submit-btn" id="submit-btn" onclick="submitReview()">'+t('submitBtn')+'</button>';
+  html += '<div class="review-success" id="review-ok">'+t('submitOk')+'</div></div></div>';
+
+  var wrap = document.getElementById('result-wrap');
+  wrap.innerHTML = html;
+  wrap.style.display = 'block';
+  selRating = 0;
+  wrap.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function setRating(v) { selRating=v; updateStars(v); }
+function hoverStar(v) { updateStars(v); }
+function unhoverStar() { updateStars(selRating); }
+function updateStars(v) {
+  var stars = document.querySelectorAll('.star');
+  stars.forEach(function(s) { s.className = 'star'+(parseInt(s.getAttribute('data-v'))<=v?' active':''); });
+}
+
+function submitReview() {
+  if (!lastResult) return;
+  var product = document.getElementById('r-product').value.trim();
+  var comment = document.getElementById('r-comment').value.trim();
+  var country = document.getElementById('r-country').value.trim();
+  if (!selRating) { alert(lang==='id'?'Harap pilih rating bintang':'Please select a star rating'); return; }
+  if (!product) { alert(lang==='id'?'Harap isi nama produk':'Please enter a product name'); return; }
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = lang==='id'?'Mengirim...':'Submitting...';
+
+  var ingredients = mode==='text' ? document.getElementById('ingredients-text').value.trim() : '[Photo upload]';
+
+  fetch(SB_URL+'/rest/v1/reviews', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'},
+    body:JSON.stringify({product_name:product, ingredients:ingredients, halal_status:lastResult.status, rating:selRating, comment:comment||null, country:country||null, language:lang})
+  })
+  .then(function(r) {
+    if (r.ok) {
+      document.getElementById('review-ok').style.display = 'block';
+      btn.style.display = 'none';
+      offset = 0;
+      loadReviews();
+    } else { throw new Error(); }
+  })
+  .catch(function() {
+    btn.disabled = false;
+    btn.textContent = t('submitBtn');
+    alert(lang==='id'?'Gagal mengirim. Coba lagi.':'Failed to submit. Please try again.');
+  });
+}
+
+function sbHeaders() {
+  return {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+}
+
+function loadReviews() {
+  offset = 0;
+  fetch(SB_URL+'/rest/v1/reviews?select=*&order=created_at.desc&limit='+LIMIT, {headers:sbHeaders()})
+  .then(function(r){return r.json();})
+  .then(function(data) {
+    renderCommunity(data, false);
+    offset = data.length;
+    document.getElementById('load-more-btn').style.display = data.length>=LIMIT?'block':'none';
+  }).catch(function(){});
+}
+
+function loadMore() {
+  fetch(SB_URL+'/rest/v1/reviews?select=*&order=created_at.desc&limit='+LIMIT+'&offset='+offset, {headers:sbHeaders()})
+  .then(function(r){return r.json();})
+  .then(function(data) {
+    renderCommunity(data, true);
+    offset += data.length;
+    document.getElementById('load-more-btn').style.display = data.length>=LIMIT?'block':'none';
+  }).catch(function(){});
+}
+
+function renderCommunity(data, append) {
+  var list = document.getElementById('reviews-list');
+  if (!append) list.innerHTML = '';
+  if (!data || !data.length) {
+    if (!append) list.innerHTML = '<div class="no-reviews">'+t('noReviews')+'</div>';
+    return;
+  }
+  data.forEach(function(r) {
+    var stars=''; for(var i=1;i<=5;i++) stars+=i<=r.rating?'&#9733;':'&#9734;';
+    var date = new Date(r.created_at).toLocaleDateString();
+    var card = document.createElement('div');
+    card.className = 'review-card';
+    card.innerHTML =
+      '<div class="review-card-header"><span class="review-product">'+esc(r.product_name)+'</span>'+
+      '<span class="status-badge status-'+r.halal_status+'">'+r.halal_status+'</span></div>'+
+      '<div class="review-stars">'+stars+'</div>'+
+      (r.comment?'<div class="review-comment">'+esc(r.comment)+'</div>':'')+
+      '<div class="review-meta">'+(r.country?esc(r.country)+' &middot; ':'')+date+'</div>';
+    list.appendChild(card);
+  });
+}
+
+function searchProduct() {
+  var query = document.getElementById('search-input').value.trim();
+  if (!query) return;
+  var btn = document.getElementById('search-btn');
+  btn.textContent = t('searching');
+  btn.disabled = true;
+
+  fetch(SB_URL+'/rest/v1/reviews?select=*&product_name=ilike.*'+encodeURIComponent(query)+'*&order=created_at.desc&limit=10', {headers:sbHeaders()})
+  .then(function(r){return r.json();})
+  .then(function(data) {
+    var box = document.getElementById('prev-box');
+    var list = document.getElementById('prev-list');
+    var title = document.getElementById('prev-title');
+    box.style.display = 'block';
+    list.innerHTML = '';
+
+    if (!data || !data.length) {
+      title.textContent = '';
+      list.innerHTML = '<div style="font-size:13px;color:var(--muted);font-style:italic;padding:8px 0;">'+t('searchNone')+'</div>';
+    } else {
+      title.textContent = t('searchFound')+' "'+query+'" ('+data.length+')';
+      var total=0; data.forEach(function(r){total+=r.rating||0;});
+      var avg = Math.round(total/data.length);
+      var mostCommon = (function(){
+        var cnt={}; data.forEach(function(r){cnt[r.halal_status]=(cnt[r.halal_status]||0)+1;});
+        return Object.keys(cnt).sort(function(a,b){return cnt[b]-cnt[a];})[0];
+      })();
+      var cfg = CFG[mostCommon]||CFG.MASHBOOH;
+      var stars=''; for(var i=1;i<=5;i++) stars+=i<=avg?'&#9733;':'&#9734;';
+      list.innerHTML = '<div style="background:'+cfg.bg+';border:1px solid '+cfg.border+';border-radius:10px;padding:12px 14px;margin-bottom:12px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'+
+        '<span style="font-weight:700;color:'+cfg.color+';font-size:15px;">'+mostCommon+'</span>'+
+        '<span style="color:var(--amber);font-size:16px;">'+stars+'</span></div>'+
+        '<div style="font-size:12px;color:var(--muted);">'+data.length+' review'+(data.length>1?'s':'')+'</div></div>';
+      data.forEach(function(r) {
+        var s=''; for(var i=1;i<=5;i++) s+=i<=r.rating?'&#9733;':'&#9734;';
+        var date = new Date(r.created_at).toLocaleDateString();
+        var card = document.createElement('div');
+        card.className = 'prev-card';
+        card.innerHTML =
+          '<div class="prev-card-header"><span class="prev-card-product">'+esc(r.product_name)+'</span>'+
+          '<span class="status-badge status-'+r.halal_status+'">'+r.halal_status+'</span></div>'+
+          '<div class="prev-card-stars">'+s+'</div>'+
+          (r.comment?'<div class="prev-card-comment">'+esc(r.comment)+'</div>':'')+
+          '<div class="prev-card-meta">'+(r.country?esc(r.country)+' &middot; ':'')+date+'</div>';
+        list.appendChild(card);
+      });
+    }
+  })
+  .catch(function() {
+    document.getElementById('prev-box').style.display = 'block';
+    document.getElementById('prev-list').innerHTML = '<div style="font-size:13px;color:var(--red);">Search failed. Please try again.</div>';
+  })
+  .finally(function() {
+    btn.textContent = t('searchBtn');
+    btn.disabled = false;
+  });
+}
+
+function copyRes() {
+  if (!lastResult) return;
+  var r = lastResult;
+  var txt = 'HALAL CHECKER\nStatus: '+r.status+' ('+r.confidence+')\n'+r.summary;
+  if (r.flagged&&r.flagged.length) r.flagged.forEach(function(f){txt+='\n- '+f.ingredient+': '+f.reason;});
+  if (r.advice) txt+='\n\n'+r.advice;
+  txt+='\n\nChecked via Halal Checker app';
+  navigator.clipboard.writeText(txt).then(function(){alert(t('copied'));});
+}
+
+function shareWa() {
+  if (!lastResult) return;
+  var msg = encodeURIComponent(t('waMsg')+lastResult.status+'\n'+lastResult.summary+t('waEnd'));
+  window.open('https://wa.me/?text='+msg,'_blank');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+var bl = navigator.language || navigator.userLanguage || 'en';
+if (bl.toLowerCase().startsWith('id')) setLang('id');
+
+document.getElementById('search-input').onkeypress = function(e) {
+  if (e.key==='Enter') searchProduct();
+};
+
+loadReviews();
+</script>
+</body>
+</html>

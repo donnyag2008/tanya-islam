@@ -493,6 +493,136 @@ async function handleAsk(request, env) {
   }
 }
 
+// ---------- Halal Checker ----------
+
+// core dietary law verses — always relevant regardless of the specific product/ingredient,
+// since these are the foundational Quranic basis for every halal/haram food ruling
+const CORE_DIETARY_VERSES = [
+  { surah: 2, ayah: 173 },  // Al-Baqarah — forbidden: carrion, blood, swine, other than Allah's name
+  { surah: 5, ayah: 3 },    // Al-Ma'idah — detailed list of forbidden foods
+  { surah: 5, ayah: 90 },   // Al-Ma'idah — alcohol/gambling as abomination
+  { surah: 6, ayah: 145 }   // Al-An'am — reiterates forbidden foods
+];
+
+async function fetchCoreDietaryVerses(lang) {
+  const results = await Promise.all(CORE_DIETARY_VERSES.map(async (r) => {
+    const [arabic, text] = await Promise.all([
+      fetchArabicAyah(r.surah, r.ayah),
+      fetchTranslationAyah(r.surah, r.ayah, lang)
+    ]);
+    return { ref: `${r.surah}:${r.ayah}`, arabic, text: text || '' };
+  }));
+  return results;
+}
+
+// detect classical haram keywords in ingredient text to decide whether a targeted hadith search is worth running
+function detectClassicalHaramTerms(text) {
+  const t = text.toLowerCase();
+  const terms = [];
+  if (/\b(pork|pig|swine|lard|bacon|ham)\b/.test(t)) terms.push('swine');
+  if (/\b(alcohol|wine|beer|liquor|ethanol|rum|whisky|vodka)\b/.test(t)) terms.push('wine');
+  if (/\b(blood)\b/.test(t)) terms.push('blood');
+  if (/\b(gelatin|gelatine)\b/.test(t)) terms.push('gelatin');
+  return terms;
+}
+
+async function callClaudeVision(env, system, messageContent, maxTokens) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: system,
+      messages: [{ role: 'user', content: messageContent }]
+    })
+  });
+  const result = await res.json();
+  if (result.error) throw new Error(result.error.message);
+  return result.content?.find(b => b.type === 'text')?.text || '';
+}
+
+function buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock) {
+  const langInstruction = lang === 'id'
+    ? 'Jawab dalam Bahasa Indonesia yang jelas dan mudah dipahami.'
+    : 'Answer in clear, simple English.';
+
+  const versesBlock = dietaryVerses.map(v => `- Al-Qur'an ${v.ref}: "${v.text}"${v.arabic ? `\n  Arabic: ${v.arabic}` : ''}`).join('\n');
+
+  return `You are a Halal Checker assistant. Your ruling MUST be grounded in the Quranic dietary law principles provided below, plus any retrieved Hadith. ` +
+    `These are the core textual bases for every halal/haram food ruling — carrion, blood, swine/pork, anything slaughtered invoking other than Allah's name, and intoxicants are explicitly forbidden: \n${versesBlock}\n\n` +
+    `${hadithBlock ? `Additional retrieved Hadith relevant to specific ingredients found:\n${hadithBlock}\n\n` : ''}` +
+    `RULES: ` +
+    `1. If an ingredient is directly and unambiguously covered by the verses above (pork/swine, alcohol, blood, carrion) — mark it HARAM with high confidence, citing the specific verse. ` +
+    `2. If an ingredient is a MODERN or AMBIGUOUS item not directly named in classical texts (E-numbers, "natural flavouring", emulsifiers, gelatin without a stated source, enzymes) — you cannot know its true source from ingredient text alone. Mark these as MASHBOOH (doubtful) and clearly explain WHY it's uncertain (e.g. "gelatin can be derived from pork or beef — source not stated on this label"), rather than guessing confidently either way. ` +
+    `3. Never state a modern ingredient is definitively HALAL or HARAM unless the retrieved verses/hadith or extremely well-established scholarly consensus (e.g. plain sugar, water, wheat flour are obviously halal) support that with certainty. ` +
+    `4. The overall product STATUS should be HARAM if any ingredient is definitively haram, MASHBOOH if any ingredient is ambiguous but nothing is definitively haram, HALAL only if everything is clearly permissible. ` +
+    langInstruction +
+    ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
+    `{"status":"HALAL or HARAM or MASHBOOH","confidence":"HIGH or MEDIUM or LOW","summary":"1-2 sentence plain-language summary","flagged":[{"ingredient":"name","severity":"HARAM or MASHBOOH","reason":"why, grounded in the verses/hadith above or clearly explained uncertainty"}],"safe":["list of clearly permissible ingredient names"],"advice":"brief practical advice, e.g. suggest checking for official certification (MUI/JAKIM/MUIS/HMC) if uncertain"}`;
+}
+
+async function handleCheck(request, env) {
+  try {
+    const body = await request.json();
+    const content = body.content;
+    const lang = body.lang === 'id' ? 'id' : 'en';
+
+    if (!content) {
+      return new Response(JSON.stringify({ error: 'Missing content' }), { status: 400, headers: CORS_HEADERS });
+    }
+
+    // always fetch the core dietary law verses — same grounding basis regardless of product
+    const dietaryVersesPromise = fetchCoreDietaryVerses(lang);
+
+    let hadithResults = [];
+    let messageContent;
+
+    if (content.type === 'image') {
+      const dietaryVerses = await dietaryVersesPromise;
+      const sys = buildHalalSystemPrompt(lang, dietaryVerses, '');
+      messageContent = [
+        { type: 'image', source: { type: 'base64', media_type: content.mediaType, data: content.data } },
+        { type: 'text', text: 'Read the ingredients label in this image and determine if this product is Halal, Haram, or Mashbooh, following the rules and grounding in your system instructions.' }
+      ];
+      const raw = await callClaudeVision(env, sys, messageContent, 1200);
+      const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });
+    } else {
+      const classicalTerms = detectClassicalHaramTerms(content.text);
+      const [dietaryVerses, ...hadithSearches] = await Promise.all([
+        dietaryVersesPromise,
+        ...classicalTerms.map(term => searchHadith(env, term))
+      ]);
+      hadithResults = hadithSearches.flat();
+
+      const hadithBlock = hadithResults.length
+        ? hadithResults.slice(0, 5).map(h => `- ${h.ref}: "${h.text}"`).join('\n')
+        : '';
+
+      const sys = buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock);
+      const userText = `Ingredients list to check:\n${content.text}`;
+      const raw = await callClaude(env, sys, userText, 1200);
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      } catch (e) {
+        const start = raw.indexOf('{');
+        const end = raw.lastIndexOf('}');
+        parsed = JSON.parse(raw.slice(start, end + 1).replace(/\r?\n/g, ' '));
+      }
+      return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });
+    }
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message || 'Analysis failed' }), { status: 500, headers: CORS_HEADERS });
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -503,6 +633,16 @@ export default {
       }
       if (request.method === 'POST') {
         return handleAsk(request, env);
+      }
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: CORS_HEADERS });
+    }
+
+    if (url.pathname === '/api/check') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: CORS_HEADERS });
+      }
+      if (request.method === 'POST') {
+        return handleCheck(request, env);
       }
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: CORS_HEADERS });
     }
