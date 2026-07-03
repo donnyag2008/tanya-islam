@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tanya Islam — Islamic Q&A</title>
+  <title>Tanya Tentang Islam (TTI) — Islamic Q&A</title>
   <meta name="description" content="Ask any question about Islam — answered from Quran, Hadith, and scholarly opinion. Available in English and Bahasa Indonesia." />
 
   <!-- Open Graph / WhatsApp / Social sharing -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tanya-islam.donnybachtiar8.workers.dev/" />
-  <meta property="og:title" content="Tanya Islam — Islamic Q&A" />
+  <meta property="og:title" content="Tanya Tentang Islam (TTI) — Islamic Q&A" />
   <meta property="og:description" content="Ask any question about Islam — answered from Quran, Hadith & scholars. English & Bahasa Indonesia." />
   <meta property="og:image" content="https://tanya-islam.donnybachtiar8.workers.dev/og-image.svg" />
   <meta property="twitter:card" content="summary_large_image" />
-  <meta property="twitter:title" content="Tanya Islam — Islamic Q&A" />
+  <meta property="twitter:title" content="Tanya Tentang Islam (TTI) — Islamic Q&A" />
   <meta property="twitter:description" content="Ask any question about Islam — answered from Quran, Hadith & scholars." />
   <meta property="twitter:image" content="https://tanya-islam.donnybachtiar8.workers.dev/og-image.svg" />
 
@@ -131,18 +131,17 @@
   <div class="container">
     <nav class="topnav">
       <a class="nav-logo" href="index.html">
-        <span><svg width="16" height="16" viewBox="0 0 64 64" style="vertical-align:-2px"><circle cx="32" cy="32" r="18" fill="#a07830"/><circle cx="38" cy="28" r="14" fill="#faf7f2"/><polygon points="44,10 45.5,14.5 50,14.5 46.5,17.5 48,22 44,19 40,22 41.5,17.5 38,14.5 42.5,14.5" fill="#a07830"/></svg> Tanya Islam</span>
+        <span><svg width="16" height="16" viewBox="0 0 64 64" style="vertical-align:-2px"><circle cx="32" cy="32" r="18" fill="#a07830"/><circle cx="38" cy="28" r="14" fill="#faf7f2"/><polygon points="44,10 45.5,14.5 50,14.5 46.5,17.5 48,22 44,19 40,22 41.5,17.5 38,14.5 42.5,14.5" fill="#a07830"/></svg> TTI</span>
       </a>
       <div class="nav-links">
         <a class="nav-link active" href="index.html">Q&amp;A</a>
-        <a class="nav-link" href="halal.html">Halal Checker</a>
         <a class="nav-link" href="hub.html">All Tools</a>
       </div>
     </nav>
 
     <div class="header">
       <div class="crescent"><svg width="42" height="42" viewBox="0 0 64 64"><circle cx="32" cy="32" r="18" fill="#c9a84c"/><circle cx="38" cy="28" r="14" fill="#faf7f2"/><polygon points="44,10 45.5,14.5 50,14.5 46.5,17.5 48,22 44,19 40,22 41.5,17.5 38,14.5 42.5,14.5" fill="#c9a84c"/></svg></div>
-      <div class="title">Tanya Islam</div>
+      <div class="title">Tanya Tentang Islam (TTI)</div>
       <div class="arabic-title">اسأل عن الإسلام</div>
       <div class="subtitle">Quran · Hadith · Scholars · EN / ID</div>
     </div>
@@ -187,9 +186,8 @@
     <div class="footer">
       <div class="footer-links">
         <a class="footer-link" href="hub.html">Islamic Tools Hub</a>
-        <a class="footer-link" href="halal.html">Halal Checker</a>
       </div>
-      <div class="footer-copy">© 2025 Tanya Islam · tanya-islam.donnybachtiar8.workers.dev</div>
+      <div class="footer-copy">© 2025 Tanya Tentang Islam (TTI) · tanya-islam.donnybachtiar8.workers.dev</div>
     </div>
   </div>
 
@@ -309,7 +307,7 @@
       const lines = [q, '', d.answer, quranLine, hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:''].filter(Boolean).join('\n');
       const shareUrl = `${location.origin}${location.pathname}?q=${encodeURIComponent(q)}&lang=${currentLang}`;
       if (navigator.share) {
-        navigator.share({ title: 'Tanya Islam', text: lines, url: shareUrl }).catch(()=>{});
+        navigator.share({ title: 'Tanya Tentang Islam (TTI)', text: lines, url: shareUrl }).catch(()=>{});
       } else {
         navigator.clipboard.writeText(`${lines}\n\n${shareUrl}`)
           .then(()=>showToast(currentLang==='id' ? 'Link disalin!' : 'Link copied!'))
