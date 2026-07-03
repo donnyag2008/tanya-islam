@@ -80,13 +80,56 @@ async function filterRelevant(env, question, quranMatches, hadithResults) {
   }
 }
 
+// surahs that are substantially or entirely a narrative about one figure —
+// for these, a "tell me the story of X" question should pull directly from the chapter
+// rather than relying on a generic keyword search that only finds passing mentions
+const STORY_SURAHS = {
+  'yusuf': { number: 12, count: 8 },   // entirely Yusuf's story
+  'nuh': { number: 71, count: 8 },     // entirely Nuh's story
+  'maryam': { number: 19, count: 8 },  // Maryam & Isa's birth narrative
+  'luqman': { number: 31, count: 6 }   // Luqman's counsel to his son
+};
+
+function detectStorySurah(question) {
+  const q = question.toLowerCase();
+  const storyWords = ['cerita', 'kisah', 'story', 'tell me about', 'ceritakan'];
+  if (!storyWords.some(w => q.includes(w))) return null;
+  for (const [name, info] of Object.entries(STORY_SURAHS)) {
+    if (q.includes(name)) return { name, ...info };
+  }
+  return null;
+}
+
+async function fetchSurahOpening(surahNumber, lang, count) {
+  try {
+    const arabicEdition = 'quran-uthmani';
+    const translationEdition = lang === 'id' ? 'id.indonesian' : 'en.sahih';
+    const [arRes, trRes] = await Promise.all([
+      fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${arabicEdition}`),
+      fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${translationEdition}`)
+    ]);
+    const [arData, trData] = await Promise.all([arRes.json(), trRes.json()]);
+    if (arData.code !== 200 || trData.code !== 200 || !trData.data?.ayahs) return [];
+    const surahName = trData.data.englishName;
+    return trData.data.ayahs.slice(0, count).map((a, i) => ({
+      ref: `${surahName} ${surahNumber}:${a.numberInSurah}`,
+      text: a.text,
+      arabic: arData.data.ayahs[i]?.text || '',
+      surahNumber,
+      ayahNumber: a.numberInSurah
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
 async function searchQuran(keyword) {
   try {
     const encoded = encodeURIComponent(keyword);
     const res = await fetch(`https://api.alquran.cloud/v1/search/${encoded}/all/en`);
     const data = await res.json();
     if (data.code !== 200 || !data.data || !data.data.matches || !data.data.matches.length) return [];
-    return data.data.matches.slice(0, 2).map(m => ({
+    return data.data.matches.slice(0, 3).map(m => ({
       surah: m.surah.englishName,
       surahNumber: m.surah.number,
       ayahNumber: m.numberInSurah,
@@ -178,11 +221,12 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `Only say no relevant information was found if the retrieved text below is truly empty or completely unrelated to the topic. ` +
     `If RETRIEVED TAFSIR (Ibn Kathir) below is non-empty and relevant, summarize his commentary in the "tafsir" field, explicitly attributed to Ibn Kathir — do not invent commentary from any other scholar (e.g. never attribute anything to Buya Hamka or Al-Ghazali, since their commentary is not available in the retrieved sources). ` +
     `For any question of fiqh (rulings) that differs between the four Madhabs (Hanafi, Maliki, Shafi'i, Hanbali), note that scholars differ and advise consulting a qualified local scholar rather than stating a single ruling as definitive. ` +
+    `IMPORTANT: the "quran" field must be an ARRAY, one entry per verse listed under RETRIEVED QURAN VERSES below — do not pick just one if multiple were retrieved and are relevant. Each entry must be an object: {"ref":"the verse reference","arabic":"the Arabic text of that verse","text":"the translation"}. If none are relevant, use an empty array. ` +
     `IMPORTANT: the "hadith" field must be an ARRAY OF PLAIN STRINGS (not objects) containing EVERY hadith listed under RETRIEVED HADITH below — one string per hadith, translated into the target language. Each string should read like "Reference: hadith text" combined together as ONE string — do NOT use {"ref":...,"text":...} object format. Do NOT merge multiple hadith into one entry, do NOT summarize them together, and do NOT omit any of them — if 4 hadith were retrieved, return 4 array entries. ` +
     `CRITICAL JSON SAFETY: this response will be parsed as JSON. When quoting speech (e.g. what the Prophet or a narrator said), ALWAYS use single quotes ' around the quoted words, never double quotes " — double quotes inside a field's text will break the JSON structure. Keep every field value on a single line with no literal line breaks inside it (use a space instead of a line break). ` +
     langInstruction +
     ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
-    `{"answer":"2-4 sentence answer grounded only in the retrieved text below — if only partially related, say so and note this is the closest match available","quran_arabic":"Arabic text of the most relevant retrieved verse, or empty string if none","quran":"the retrieved Quran reference and translation used, or empty string if none","hadith":["one array entry per retrieved hadith below, each with its reference and full translated text — include ALL of them, or empty array if none"],"tafsir":"summary of Ibn Kathir's commentary if retrieved and relevant, explicitly attributed to him, or empty string if none retrieved","scholars":"brief neutral note if this touches madhab differences, or empty string","refs":["short ref strings actually used"]}`;
+    `{"answer":"2-4 sentence answer grounded only in the retrieved text below — if only partially related, say so and note this is the closest match available","quran":[{"ref":"verse reference","arabic":"Arabic text","text":"translation"}],"hadith":["one array entry per retrieved hadith below, each with its reference and full translated text — include ALL of them, or empty array if none"],"tafsir":"summary of Ibn Kathir's commentary if retrieved and relevant, explicitly attributed to him, or empty string if none retrieved","scholars":"brief neutral note if this touches madhab differences, or empty string","refs":["short ref strings actually used"]}`;
 
   const userText = `Question: ${question}\n\n` +
     `RETRIEVED QURAN VERSES:\n${quranBlock}\n\n` +
@@ -229,13 +273,22 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     : 'There was a technical issue composing the answer. Here are the sources that were found:';
   return {
     answer: fallbackNote,
-    quran_arabic: quranResults[0]?.arabic || '',
-    quran: quranResults[0] ? `${quranResults[0].ref}: ${quranResults[0].text}` : '',
+    quran: quranResults.map(q => ({ ref: q.ref, arabic: q.arabic || '', text: q.text })),
     hadith: hadithResults.map(h => `${h.ref}: ${h.text}${untranslatedNote}`),
     tafsir: '',
     scholars: '',
     refs: [...quranResults.map(q => q.ref), ...hadithResults.map(h => h.ref)]
   };
+}
+
+function quranItemToObject(item, fallbackLang) {
+  if (item && typeof item === 'object' && (item.text || item.ref)) {
+    return { ref: item.ref || '', arabic: item.arabic || item.quran_arabic || '', text: item.text || '' };
+  }
+  if (typeof item === 'string') {
+    return { ref: '', arabic: '', text: item };
+  }
+  return null;
 }
 
 function hadithItemToString(item) {
@@ -260,15 +313,30 @@ async function handleAsk(request, env) {
     }
 
     const keyword = await extractKeyword(env, question);
+    const storySurah = detectStorySurah(question);
 
-    let [quranMatches, hadithResults] = await Promise.all([
-      searchQuran(keyword),
-      searchHadith(env, keyword)
-    ]);
+    let quranMatches, hadithResults;
+    let storyVerses = [];
+
+    if (storySurah) {
+      // dedicated-chapter path: pull directly from the relevant surah instead of generic keyword search
+      const [verses, hadithSearch] = await Promise.all([
+        fetchSurahOpening(storySurah.number, lang, storySurah.count),
+        searchHadith(env, keyword)
+      ]);
+      storyVerses = verses;
+      quranMatches = []; // handled separately via storyVerses below
+      hadithResults = hadithSearch;
+    } else {
+      [quranMatches, hadithResults] = await Promise.all([
+        searchQuran(keyword),
+        searchHadith(env, keyword)
+      ]);
+    }
 
     // fallback 1: if the multi-word phrase found nothing, try just its first word —
     // single terms often match substring search better than phrases (e.g. "Dajjal" alone vs "Dajjal appearance signs")
-    if (!quranMatches.length && !hadithResults.length) {
+    if (!storySurah && !quranMatches.length && !hadithResults.length) {
       const firstWord = keyword.split(/\s+/)[0];
       if (firstWord && firstWord.toLowerCase() !== keyword.toLowerCase()) {
         [quranMatches, hadithResults] = await Promise.all([
@@ -279,7 +347,7 @@ async function handleAsk(request, env) {
     }
 
     // fallback 2: broader general topic category as a last resort
-    if (!quranMatches.length && !hadithResults.length) {
+    if (!storySurah && !quranMatches.length && !hadithResults.length) {
       const broaderKeyword = await extractBroaderKeyword(env, question);
       if (broaderKeyword && broaderKeyword.toLowerCase() !== keyword.toLowerCase()) {
         [quranMatches, hadithResults] = await Promise.all([
@@ -290,26 +358,40 @@ async function handleAsk(request, env) {
     }
 
     // filter out false-positive substring matches (e.g. a hadith that only shares a common word
-    // with the question but isn't actually on-topic) before using them in the final answer
-    ({ quranMatches, hadithResults } = await filterRelevant(env, question, quranMatches, hadithResults));
+    // with the question but isn't actually on-topic) before using them in the final answer —
+    // skip this for the Quran side in story mode, since those verses are already curated by chapter
+    if (storySurah) {
+      const filtered = await filterRelevant(env, question, [], hadithResults);
+      hadithResults = filtered.hadithResults;
+    } else {
+      ({ quranMatches, hadithResults } = await filterRelevant(env, question, quranMatches, hadithResults));
+    }
 
     let quranResults = [];
     let tafsirText = '';
-    if (quranMatches.length) {
-      const top = quranMatches[0];
-      const [arabicText, translationText, tafsir] = await Promise.all([
-        fetchArabicAyah(top.surahNumber, top.ayahNumber),
-        fetchTranslationAyah(top.surahNumber, top.ayahNumber, lang),
-        fetchIbnKathirTafsir(top.surahNumber, top.ayahNumber)
-      ]);
-      quranResults = [{
-        ref: top.ref,
-        text: translationText !== null ? translationText : (lang === 'id'
-          ? '[Terjemahan Bahasa Indonesia untuk ayat ini tidak berhasil dimuat — hanya teks Arab yang tersedia]'
-          : top.text),
-        arabic: arabicText
-      }];
-      tafsirText = tafsir;
+    if (storySurah && storyVerses.length) {
+      quranResults = storyVerses;
+      tafsirText = await fetchIbnKathirTafsir(storyVerses[0].surahNumber, storyVerses[0].ayahNumber);
+    } else if (quranMatches.length) {
+      // fetch full details (Arabic + translation) for every relevant match found, not just the first —
+      // general questions deserve the same thoroughness as story questions
+      quranResults = await Promise.all(quranMatches.map(async (m) => {
+        const [arabicText, translationText] = await Promise.all([
+          fetchArabicAyah(m.surahNumber, m.ayahNumber),
+          fetchTranslationAyah(m.surahNumber, m.ayahNumber, lang)
+        ]);
+        return {
+          ref: m.ref,
+          text: translationText !== null ? translationText : (lang === 'id'
+            ? '[Terjemahan Bahasa Indonesia untuk ayat ini tidak berhasil dimuat — hanya teks Arab yang tersedia]'
+            : m.text),
+          arabic: arabicText,
+          surahNumber: m.surahNumber,
+          ayahNumber: m.ayahNumber
+        };
+      }));
+      // tafsir only for the top match, to keep the prompt a reasonable size
+      tafsirText = await fetchIbnKathirTafsir(quranMatches[0].surahNumber, quranMatches[0].ayahNumber);
     }
 
     const parsed = await composeAnswer(env, question, lang, quranResults, hadithResults, tafsirText);
@@ -332,6 +414,16 @@ async function handleAsk(request, env) {
       parsed.hadith = hadithResults.map(h => `${h.ref}: ${h.text}${note}`);
     } else {
       parsed.hadith = hadithFromModel;
+    }
+
+    // same safety net for quran: normalize whatever shape came back, and rescue if genuinely relevant
+    // verses were retrieved but Claude's array came back empty (without overriding a deliberate judgment)
+    const quranFromModelRaw = Array.isArray(parsed.quran) ? parsed.quran : (parsed.quran ? [parsed.quran] : []);
+    const quranFromModel = quranFromModelRaw.map(q => quranItemToObject(q)).filter(Boolean);
+    if (!quranFromModel.length && quranResults.length && !claudeSignaledNotRelevant) {
+      parsed.quran = quranResults.map(q => ({ ref: q.ref, arabic: q.arabic || '', text: q.text }));
+    } else {
+      parsed.quran = quranFromModel;
     }
 
     return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });

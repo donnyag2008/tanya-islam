@@ -304,8 +304,9 @@
       if (!currentQA) return;
       const d = currentQA.data;
       const q = currentQA.q;
+      const quranLine = quranArray(d).length ? `Quran:\n${quranArray(d).map(q=>`- ${q.ref?q.ref+': ':''}${q.text}`).join('\n')}` : '';
       const hadithLine = hadithArray(d).length ? `Hadith:\n${hadithArray(d).map(h=>`- ${h}`).join('\n')}` : '';
-      const lines = [q, '', d.answer, d.quran?`Quran: ${d.quran}`:'', hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:''].filter(Boolean).join('\n');
+      const lines = [q, '', d.answer, quranLine, hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:''].filter(Boolean).join('\n');
       const shareUrl = `${location.origin}${location.pathname}?q=${encodeURIComponent(q)}&lang=${currentLang}`;
       if (navigator.share) {
         navigator.share({ title: 'Tanya Islam', text: lines, url: shareUrl }).catch(()=>{});
@@ -323,7 +324,20 @@
       const btn = document.getElementById('ask-btn');
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span> Asking...';
-      document.getElementById('answer-container').innerHTML = `<div class="loading-card"><i class="ti ti-stars"></i>Looking through Quran, Hadith and scholars...</div>`;
+
+      const loadingSteps = currentLang === 'id'
+        ? ['Mencari kata kunci...', 'Menelusuri Al-Quran & Hadis...', 'Memeriksa tafsir Ibn Katsir...', 'Menyusun jawaban...']
+        : ['Finding the right keywords...', 'Searching Quran & Hadith...', 'Checking Ibn Kathir\'s tafsir...', 'Composing the answer...'];
+      let stepIdx = 0;
+      const renderStep = () => {
+        document.getElementById('answer-container').innerHTML =
+          `<div class="loading-card"><i class="ti ti-stars"></i>${loadingSteps[stepIdx]}</div>`;
+      };
+      renderStep();
+      const loadingInterval = setInterval(() => {
+        stepIdx = Math.min(stepIdx + 1, loadingSteps.length - 1);
+        renderStep();
+      }, 3500);
 
       try {
         const res = await fetch('/api/ask', {
@@ -339,9 +353,16 @@
       } catch(e) {
         document.getElementById('answer-container').innerHTML = `<div class="answer-card"><div class="sec-text" style="color:#8a4040">Could not load answer. Please try again.</div></div>`;
       }
+      clearInterval(loadingInterval);
       btn.disabled = false;
       btn.innerHTML = '<i class="ti ti-send"></i> Ask';
       input.value = '';
+    }
+
+    function quranArray(d) {
+      if (Array.isArray(d.quran)) return d.quran.filter(q => q && (q.text || q.arabic));
+      if (d.quran) return [{ ref: '', arabic: d.quran_arabic || '', text: d.quran }]; // backward compatibility
+      return [];
     }
 
     function hadithArray(d) {
@@ -387,8 +408,10 @@
 
     function renderAnswer(q, d) {
       currentQA = { q, data: d };
-      const arabicBlock = d.quran_arabic ? `<div class="arabic-verse">${d.quran_arabic}</div>` : '';
-      const quranSec = d.quran ? `<div class="section"><div class="sec-label"><i class="ti ti-book"></i> Quran</div>${arabicBlock}<div class="sec-text">${d.quran}</div></div>` : '';
+      const qList = quranArray(d);
+      const quranSec = qList.length
+        ? `<div class="section"><div class="sec-label"><i class="ti ti-book"></i> Quran</div>${qList.map((q,i) => `<div style="${i<qList.length-1?'margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f0e0c0;':''}">${q.arabic?`<div class="arabic-verse">${q.arabic}</div>`:''}<div class="sec-text">${q.ref?`<strong>${q.ref}</strong> — `:''}${q.text}</div></div>`).join('')}</div>`
+        : '';
       const hList = hadithArray(d);
       const hadithSec = hList.length
         ? `<div class="section"><div class="sec-label"><i class="ti ti-scroll"></i> Hadith</div>${hList.map((h,i) => `<div class="sec-text" style="${i<hList.length-1?'margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0e0c0;':''}">${h}</div>`).join('')}</div>`
@@ -415,8 +438,9 @@
 
     function copyAnswer(jsonStr) {
       const d = JSON.parse(jsonStr);
+      const quranLine = quranArray(d).length ? `Quran:\n${quranArray(d).map(q=>`- ${q.ref?q.ref+': ':''}${q.text}${q.arabic?` (Arabic: ${q.arabic})`:''}`).join('\n')}` : '';
       const hadithLine = hadithArray(d).length ? `Hadith:\n${hadithArray(d).map(h=>`- ${h}`).join('\n')}` : '';
-      const lines = [d.answer, d.quran_arabic?`Quran (Arabic): ${d.quran_arabic}`:'', d.quran?`Quran: ${d.quran}`:'', hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:'', d.scholars?`Scholars: ${d.scholars}`:''].filter(Boolean).join('\n\n');
+      const lines = [d.answer, quranLine, hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:'', d.scholars?`Scholars: ${d.scholars}`:''].filter(Boolean).join('\n\n');
       navigator.clipboard.writeText(lines).then(()=>showToast()).catch(()=>{});
     }
 
