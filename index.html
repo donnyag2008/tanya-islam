@@ -304,7 +304,8 @@
       if (!currentQA) return;
       const d = currentQA.data;
       const q = currentQA.q;
-      const lines = [q, '', d.answer, d.quran?`Quran: ${d.quran}`:'', d.hadith?`Hadith: ${d.hadith}`:''].filter(Boolean).join('\n');
+      const hadithLine = hadithArray(d).length ? `Hadith:\n${hadithArray(d).map(h=>`- ${h}`).join('\n')}` : '';
+      const lines = [q, '', d.answer, d.quran?`Quran: ${d.quran}`:'', hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:''].filter(Boolean).join('\n');
       const shareUrl = `${location.origin}${location.pathname}?q=${encodeURIComponent(q)}&lang=${currentLang}`;
       if (navigator.share) {
         navigator.share({ title: 'Tanya Islam', text: lines, url: shareUrl }).catch(()=>{});
@@ -341,6 +342,11 @@
       btn.disabled = false;
       btn.innerHTML = '<i class="ti ti-send"></i> Ask';
       input.value = '';
+    }
+
+    function hadithArray(d) {
+      if (!d.hadith) return [];
+      return Array.isArray(d.hadith) ? d.hadith : [d.hadith];
     }
 
     function refToUrl(ref) {
@@ -383,7 +389,11 @@
       currentQA = { q, data: d };
       const arabicBlock = d.quran_arabic ? `<div class="arabic-verse">${d.quran_arabic}</div>` : '';
       const quranSec = d.quran ? `<div class="section"><div class="sec-label"><i class="ti ti-book"></i> Quran</div>${arabicBlock}<div class="sec-text">${d.quran}</div></div>` : '';
-      const hadithSec = d.hadith ? `<div class="section"><div class="sec-label"><i class="ti ti-scroll"></i> Hadith</div><div class="sec-text">${d.hadith}</div></div>` : '';
+      const hList = hadithArray(d);
+      const hadithSec = hList.length
+        ? `<div class="section"><div class="sec-label"><i class="ti ti-scroll"></i> Hadith</div>${hList.map((h,i) => `<div class="sec-text" style="${i<hList.length-1?'margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0e0c0;':''}">${h}</div>`).join('')}</div>`
+        : '';
+      const tafsirSec = d.tafsir ? `<div class="section"><div class="sec-label"><i class="ti ti-book-2"></i> Tafsir — Ibn Kathir</div><div class="sec-text">${d.tafsir}</div></div>` : '';
       const scholarSec = d.scholars ? `<div class="section"><div class="sec-label"><i class="ti ti-user-star"></i> Scholar opinion</div><div class="sec-text">${d.scholars}</div></div>` : '';
       const refs = (d.refs||[]).map(refToPill).join('');
       document.getElementById('answer-container').innerHTML = `
@@ -391,7 +401,7 @@
           <div class="q-label">Question</div>
           <div class="q-text">${q}</div>
           <div class="section"><div class="sec-label"><i class="ti ti-message-circle"></i> Answer</div><div class="sec-text">${d.answer}</div></div>
-          ${quranSec}${hadithSec}${scholarSec}
+          ${quranSec}${hadithSec}${tafsirSec}${scholarSec}
           ${refs?`<div style="margin-top:12px">${refs}</div>`:''}
           <div class="action-row">
             <button class="act-btn" onclick="copyAnswer(${JSON.stringify(JSON.stringify(d))})"><i class="ti ti-copy"></i> Copy</button>
@@ -405,7 +415,8 @@
 
     function copyAnswer(jsonStr) {
       const d = JSON.parse(jsonStr);
-      const lines = [d.answer, d.quran_arabic?`Quran (Arabic): ${d.quran_arabic}`:'', d.quran?`Quran: ${d.quran}`:'', d.hadith?`Hadith: ${d.hadith}`:'', d.scholars?`Scholars: ${d.scholars}`:''].filter(Boolean).join('\n\n');
+      const hadithLine = hadithArray(d).length ? `Hadith:\n${hadithArray(d).map(h=>`- ${h}`).join('\n')}` : '';
+      const lines = [d.answer, d.quran_arabic?`Quran (Arabic): ${d.quran_arabic}`:'', d.quran?`Quran: ${d.quran}`:'', hadithLine, d.tafsir?`Tafsir (Ibn Kathir): ${d.tafsir}`:'', d.scholars?`Scholars: ${d.scholars}`:''].filter(Boolean).join('\n\n');
       navigator.clipboard.writeText(lines).then(()=>showToast()).catch(()=>{});
     }
 
