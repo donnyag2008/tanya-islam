@@ -36,6 +36,8 @@ async function extractKeyword(env, question) {
     'CRITICAL: if the question names a specific Islamic figure, entity, or term (e.g. Dajjal, Yajuj, Isa, Khidr, Barzakh, Qiyamah), you MUST include that exact term verbatim in your answer — do not paraphrase or generalize it away. ' +
     'CRITICAL: if the question describes a specific historical/religious EVENT indirectly rather than naming it (e.g. "how the 5 daily prayers were commanded" or "sejarah turunnya perintah sholat" refers to the Isra and Mi\'raj / Night Journey), identify the actual event and use the MOST DISTINCTIVE PROPER NOUN from that event\'s narrative as the keyword — one that would survive translation verbatim — rather than a technical/generalized term that translators might phrase differently. Examples: for Isra and Mi\'raj (the 5 daily prayers being commanded), use "Buraq" (the named creature in the narrative) rather than "Miraj" or "prayer command"; for the migration to Madinah, use "Hijrah"; for early battles, use the specific place name like "Badr" or "Uhud". ' +
     'CRITICAL: for "how many / how often / what time" style questions, extract the SPECIFIC RITUAL OR PRACTICE being asked about (e.g. "prayer" or "salah" for prayer count questions, "fasting" for fasting questions) — NEVER use generic words like "time", "times", "day", "count", or "number" as the keyword, since these are common words that will match completely unrelated text in a substring search. ' +
+    'CRITICAL: for questions about why depicting/drawing/photographing a prophet, person, or living being is prohibited or discouraged, use "picture" or "image-maker" as the keyword — these are the actual English words used in the classical Hadith translations that discuss this topic (Bukhari\'s chapters on pictures/images), NOT literal translations like "drawing" or "face" or "portrait". ' +
+    'CRITICAL: for questions about the Prophet Muhammad\'s marriage to Aisha and her age, use "Aisha six years" as the keyword — this exact phrasing appears in the specific hadith (Sahih Bukhari) that directly addresses this, and is far more targeted than just "Aisha" alone (which would match thousands of unrelated hadith she narrated, since she was one of the most prolific narrators). ' +
     'Respond with ONLY the keyword phrase, nothing else, no punctuation, no explanation.';
   const raw = await callClaude(env, sys, question, 30, 'claude-haiku-4-5-20251001');
   return raw.trim().replace(/^["']|["']$/g, '');
@@ -306,17 +308,47 @@ function hadithItemToString(item) {
   return String(item);
 }
 
+// detect Indonesian from the question text itself, since the UI language toggle can get out of
+// sync with what the user actually types (e.g. toggle left on English, question typed in Indonesian) —
+// this ensures Quran/Hadith translation editions always match the real question language
+function detectLangFromText(question, fallbackLang) {
+  const indonesianMarkers = /\b(apakah|bagaimana|mengapa|kenapa|yang|adalah|dengan|dari|atau|tidak|kita|saya|ceritakan|bolehkah|hukumnya|nabi)\b/i;
+  if (indonesianMarkers.test(question)) return 'id';
+  return fallbackLang;
+}
+
+// for thematic questions ("which prophet did X") that describe a concept rather than using words
+// that would literally appear in translated verse text, keyword substring search often fails —
+// this asks Claude directly if it recognizes a specific well-known verse, which we then independently
+// fetch and verify from the real Quran API (never trusting Claude's own paraphrase of the content)
+async function suggestVerseReference(env, question) {
+  const sys = 'If you can confidently identify ONE specific, well-known Quran verse (surah number and ayah number) that most directly addresses this Islamic question, respond with ONLY that reference in the exact format "surah:ayah" (e.g. "7:143"). ' +
+    'If you are not highly confident of an exact verse, respond with exactly "unknown". Do not guess if unsure — a wrong reference is worse than none. No explanation, just the reference or "unknown".';
+  try {
+    const raw = await callClaude(env, sys, question, 20);
+    const match = raw.trim().match(/^(\d{1,3}):(\d{1,3})$/);
+    if (!match) return null;
+    return { surahNumber: parseInt(match[1], 10), ayahNumber: parseInt(match[2], 10) };
+  } catch (e) {
+    return null;
+  }
+}
+
 async function handleAsk(request, env) {
   try {
     const body = await request.json();
     const question = body.question;
-    const lang = body.lang === 'id' ? 'id' : 'en';
+    const rawLang = body.lang === 'id' ? 'id' : 'en';
+    const lang = detectLangFromText(question, rawLang);
 
     if (!question) {
       return new Response(JSON.stringify({ error: 'Missing question' }), { status: 400, headers: CORS_HEADERS });
     }
 
-    const keyword = await extractKeyword(env, question);
+    const [keyword, suggestedRef] = await Promise.all([
+      extractKeyword(env, question),
+      suggestVerseReference(env, question)
+    ]);
     const storySurah = detectStorySurah(question);
 
     let quranMatches, hadithResults;
@@ -336,6 +368,30 @@ async function handleAsk(request, env) {
         searchQuran(keyword),
         searchHadith(env, keyword)
       ]);
+
+      // merge in a Claude-suggested reference (for thematic questions that keyword search struggles
+      // with) — always independently verified against the real API, never trusting Claude's own text
+      if (suggestedRef) {
+        try {
+          const verRes = await fetch(`https://api.alquran.cloud/v1/ayah/${suggestedRef.surahNumber}:${suggestedRef.ayahNumber}/en.sahih`);
+          const verData = await verRes.json();
+          if (verData.code === 200 && verData.data) {
+            const surahName = verData.data.surah?.englishName || `Surah ${suggestedRef.surahNumber}`;
+            const alreadyPresent = quranMatches.some(m => m.surahNumber === suggestedRef.surahNumber && m.ayahNumber === suggestedRef.ayahNumber);
+            if (!alreadyPresent) {
+              quranMatches.push({
+                surah: surahName,
+                surahNumber: suggestedRef.surahNumber,
+                ayahNumber: suggestedRef.ayahNumber,
+                text: verData.data.text,
+                ref: `${surahName} ${suggestedRef.surahNumber}:${suggestedRef.ayahNumber}`
+              });
+            }
+          }
+        } catch (e) {
+          // if verification fails, just skip the suggestion — no harm done
+        }
+      }
     }
 
     // fallback 1: if the multi-word phrase found nothing, try just its first word —
