@@ -156,8 +156,25 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `RETRIEVED TAFSIR (Ibn Kathir):\n${tafsirBlock}\n\n` +
     `Compose the answer using only the above retrieved sources.`;
 
-  const raw = await callClaude(env, sys, userText, 900);
-  return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  const raw = await callClaude(env, sys, userText, 2500);
+  try {
+    return JSON.parse(raw.replace(/```json|```/g, '').trim());
+  } catch (e) {
+    // if Claude's JSON response is ever malformed/truncated, don't fail the whole request —
+    // fall back to a plain response built directly from the raw retrieved sources
+    const fallbackNote = lang === 'id'
+      ? 'Terjadi kendala teknis saat menyusun jawaban. Berikut sumber yang berhasil ditemukan:'
+      : 'There was a technical issue composing the answer. Here are the sources that were found:';
+    return {
+      answer: fallbackNote,
+      quran_arabic: quranResults[0]?.arabic || '',
+      quran: quranResults[0] ? `${quranResults[0].ref}: ${quranResults[0].text}` : '',
+      hadith: hadithResults.map(h => `${h.ref}: ${h.text}`),
+      tafsir: '',
+      scholars: '',
+      refs: [...quranResults.map(q => q.ref), ...hadithResults.map(h => h.ref)]
+    };
+  }
 }
 
 async function handleAsk(request, env) {
