@@ -221,6 +221,17 @@ async function handleAsk(request, env) {
 
     const parsed = await composeAnswer(env, question, lang, quranResults, hadithResults, tafsirText);
 
+    // safety net: if hadith were genuinely retrieved but Claude's JSON came back without them
+    // (empty array, wrong type, or omitted), show the actual retrieved hadith directly rather
+    // than silently losing them — reliability here should not depend on the model's JSON compliance
+    const hadithFromModel = Array.isArray(parsed.hadith) ? parsed.hadith : (parsed.hadith ? [parsed.hadith] : []);
+    if (!hadithFromModel.length && hadithResults.length) {
+      const note = lang === 'id' ? ' [teks asli Inggris, terjemahan gagal dimuat]' : '';
+      parsed.hadith = hadithResults.map(h => `${h.ref}: ${h.text}${note}`);
+    } else {
+      parsed.hadith = hadithFromModel;
+    }
+
     return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });
 
   } catch (err) {
