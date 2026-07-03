@@ -314,12 +314,20 @@ async function handleAsk(request, env) {
 
     const parsed = await composeAnswer(env, question, lang, quranResults, hadithResults, tafsirText);
 
-    // safety net: if hadith were genuinely retrieved but Claude's JSON came back without them
-    // (empty array, wrong type, or omitted), show the actual retrieved hadith directly rather
-    // than silently losing them — reliability here should not depend on the model's JSON compliance
+    // safety net: if hadith were genuinely retrieved (and already passed the relevance filter above)
+    // but Claude's JSON came back without them, that's likely a formatting slip worth rescuing.
+    // BUT if Claude's own answer text indicates it deliberately judged the sources as not relevant,
+    // trust that judgment instead of overriding it with raw data.
+    const notRelevantSignals = [
+      'tidak relevan', 'tidak membahas', 'tidak ditemukan', 'bukan jawaban langsung',
+      'not relevant', 'does not address', 'not found', 'not directly relevant', "doesn't address"
+    ];
+    const answerLower = (parsed.answer || '').toLowerCase();
+    const claudeSignaledNotRelevant = notRelevantSignals.some(s => answerLower.includes(s));
+
     const hadithFromModelRaw = Array.isArray(parsed.hadith) ? parsed.hadith : (parsed.hadith ? [parsed.hadith] : []);
     const hadithFromModel = hadithFromModelRaw.map(hadithItemToString);
-    if (!hadithFromModel.length && hadithResults.length) {
+    if (!hadithFromModel.length && hadithResults.length && !claudeSignaledNotRelevant) {
       const note = lang === 'id' ? ' [teks asli Inggris, terjemahan gagal dimuat]' : '';
       parsed.hadith = hadithResults.map(h => `${h.ref}: ${h.text}${note}`);
     } else {
