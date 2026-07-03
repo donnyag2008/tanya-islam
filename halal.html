@@ -30,7 +30,7 @@
   header p { font-size:14px; color:#cbb98f; font-style:italic; }
   .badges { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
   .badge { font-size:11px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#cbb98f; }
-  .container { max-width:580px; margin:0 auto; padding:30px 20px 60px; }
+  .container { max-width:920px; margin:0 auto; padding:2rem 1.5rem 3rem; }
 
   .search-box { background:#fdf3dc; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:24px; }
   .search-box label { display:block; font-size:12px; color:var(--gold-dark); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
@@ -372,6 +372,22 @@ function runCheck() {
   });
 }
 
+function refToUrl(ref) {
+  var m = ref.match(/^(.+?)\s+(\d+):(\d+)$/);
+  if (m) return 'https://quran.com/' + m[2] + '/' + m[3];
+  m = ref.match(/^(.+?)\s*#(\d+)/);
+  if (m) {
+    var bookKey = m[1].trim().toLowerCase();
+    var slugs = {
+      'sahih bukhari': 'bukhari', 'sahih muslim': 'muslim', 'sunan abu dawud': 'abudawud',
+      'jami at-tirmidhi': 'tirmidhi', 'sunan an-nasai': 'nasai', 'sunan ibn majah': 'ibnmajah'
+    };
+    var slug = slugs[bookKey];
+    if (slug) return 'https://sunnah.com/' + slug + ':' + m[2];
+  }
+  return null;
+}
+
 function renderResult(r) {
   var cfg = CFG[r.status] || CFG.MASHBOOH;
   var html = '<div class="result-inner" style="background:'+cfg.bg+';border:1px solid '+cfg.border+';">';
@@ -399,6 +415,17 @@ function renderResult(r) {
   }
 
   if (r.advice) html += '<div class="advice-box" style="border-left-color:'+cfg.color+';">'+r.advice+'</div>';
+
+  if (r.sources && r.sources.length) {
+    html += '<div style="margin-top:14px;">';
+    r.sources.forEach(function(s) {
+      var url = refToUrl(s);
+      html += url
+        ? '<a class="safe-tag" style="text-decoration:none;cursor:pointer;margin-right:6px;margin-bottom:6px;display:inline-block;" href="'+url+'" target="_blank" rel="noopener">'+esc(s)+'</a>'
+        : '<span class="safe-tag" style="margin-right:6px;margin-bottom:6px;display:inline-block;">'+esc(s)+'</span>';
+    });
+    html += '</div>';
+  }
 
   html += '<div class="share-row">';
   html += '<button class="share-btn" onclick="shareWa()">'+t('shareWa')+'</button>';

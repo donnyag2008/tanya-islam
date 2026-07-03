@@ -561,9 +561,10 @@ function buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock) {
     `2. If an ingredient is a MODERN or AMBIGUOUS item not directly named in classical texts (E-numbers, "natural flavouring", emulsifiers, gelatin without a stated source, enzymes) — you cannot know its true source from ingredient text alone. Mark these as MASHBOOH (doubtful) and clearly explain WHY it's uncertain (e.g. "gelatin can be derived from pork or beef — source not stated on this label"), rather than guessing confidently either way. ` +
     `3. Never state a modern ingredient is definitively HALAL or HARAM unless the retrieved verses/hadith or extremely well-established scholarly consensus (e.g. plain sugar, water, wheat flour are obviously halal) support that with certainty. ` +
     `4. The overall product STATUS should be HARAM if any ingredient is definitively haram, MASHBOOH if any ingredient is ambiguous but nothing is definitively haram, HALAL only if everything is clearly permissible. ` +
+    `CRITICAL CITATION REQUIREMENT: every item in "flagged" MUST end its "reason" text with the exact reference in parentheses, e.g. "(Al-Baqarah 2:173)" if grounded in one of the verses above, or "(Sahih Bukhari #XXXX)" if grounded in a retrieved hadith. If an item is MASHBOOH due to genuine textual absence (a modern ingredient simply isn't addressed by classical sources), say so explicitly instead of inventing a reference — do NOT cite a verse/hadith that doesn't actually support that specific ingredient. Also populate the top-level "sources" array with every reference actually cited across all flagged items (e.g. ["Al-Baqarah 2:173", "Sahih Bukhari #5209"]) — if nothing was cited (e.g. an all-HALAL result with only obviously permissible ingredients), return an empty array. ` +
     langInstruction +
     ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
-    `{"status":"HALAL or HARAM or MASHBOOH","confidence":"HIGH or MEDIUM or LOW","summary":"1-2 sentence plain-language summary","flagged":[{"ingredient":"name","severity":"HARAM or MASHBOOH","reason":"why, grounded in the verses/hadith above or clearly explained uncertainty"}],"safe":["list of clearly permissible ingredient names"],"advice":"brief practical advice, e.g. suggest checking for official certification (MUI/JAKIM/MUIS/HMC) if uncertain"}`;
+    `{"status":"HALAL or HARAM or MASHBOOH","confidence":"HIGH or MEDIUM or LOW","summary":"1-2 sentence plain-language summary","flagged":[{"ingredient":"name","severity":"HARAM or MASHBOOH","reason":"why, ending with the exact citation in parentheses if grounded in a verse/hadith, or a clear explanation of uncertainty if not"}],"safe":["list of clearly permissible ingredient names"],"advice":"brief practical advice, e.g. suggest checking for official certification (MUI/JAKIM/MUIS/HMC) if uncertain","sources":["every verse/hadith reference actually cited above, e.g. Al-Baqarah 2:173 or Sahih Bukhari #5209 — empty array if none were needed"]}`;
 }
 
 async function handleCheck(request, env) {
@@ -589,7 +590,7 @@ async function handleCheck(request, env) {
         { type: 'image', source: { type: 'base64', media_type: content.mediaType, data: content.data } },
         { type: 'text', text: 'Read the ingredients label in this image and determine if this product is Halal, Haram, or Mashbooh, following the rules and grounding in your system instructions.' }
       ];
-      const raw = await callClaudeVision(env, sys, messageContent, 1200);
+      const raw = await callClaudeVision(env, sys, messageContent, 1800);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
       return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });
     } else {
@@ -606,7 +607,7 @@ async function handleCheck(request, env) {
 
       const sys = buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock);
       const userText = `Ingredients list to check:\n${content.text}`;
-      const raw = await callClaude(env, sys, userText, 1200);
+      const raw = await callClaude(env, sys, userText, 1800);
 
       let parsed;
       try {
