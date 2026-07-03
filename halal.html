@@ -139,18 +139,6 @@
     </div>
   </header>
 
-  <div class="search-box">
-    <label id="lbl-search">Search previous reviews by product name</label>
-    <div class="search-row">
-      <input class="search-input" id="search-input" type="text" placeholder="e.g. Cadbury, Indomie, KitKat..." />
-      <button class="search-btn" id="search-btn" onclick="searchProduct()">Search</button>
-    </div>
-    <div class="prev-box" id="prev-box">
-      <div class="prev-title" id="prev-title"></div>
-      <div id="prev-list"></div>
-    </div>
-  </div>
-
   <div class="mode-toggle">
     <button class="mode-btn active" id="btn-text" onclick="setMode('text')">Type Ingredients</button>
     <button class="mode-btn" id="btn-image" onclick="setMode('image')">Upload Photo</button>
@@ -180,6 +168,18 @@
   <button id="check-btn" onclick="runCheck()">Check Halal Status</button>
   <div id="error-box" class="error-box"></div>
   <div class="result-wrap" id="result-wrap"></div>
+
+  <div class="search-box">
+    <label id="lbl-search">Already checked by someone else? Search previous reviews by product name</label>
+    <div class="search-row">
+      <input class="search-input" id="search-input" type="text" placeholder="e.g. Cadbury, Indomie, KitKat..." />
+      <button class="search-btn" id="search-btn" onclick="searchProduct()">Search</button>
+    </div>
+    <div class="prev-box" id="prev-box">
+      <div class="prev-title" id="prev-title"></div>
+      <div id="prev-list"></div>
+    </div>
+  </div>
 
   <div class="reviews-section">
     <h2 id="community-title">Community Reviews</h2>
@@ -228,7 +228,7 @@ var TR = {
     submitBtn:'Submit Review', submitOk:'Thank you for your review!',
     community:'Community Reviews', loadMore:'Load more reviews',
     noReviews:'No reviews yet. Be the first!',
-    searchLabel:'Search previous reviews by product name',
+    searchLabel:'Already checked by someone else? Search previous reviews by product name',
     searchPlaceholder:'e.g. Cadbury, Indomie, KitKat...',
     searchBtn:'Search', searching:'Searching...',
     searchFound:'Reviews found for', searchNone:'No previous reviews for this product. Be the first!',
@@ -253,7 +253,7 @@ var TR = {
     submitBtn:'Kirim Ulasan', submitOk:'Terima kasih atas ulasan Anda!',
     community:'Ulasan Komunitas', loadMore:'Muat lebih banyak ulasan',
     noReviews:'Belum ada ulasan. Jadilah yang pertama!',
-    searchLabel:'Cari ulasan produk berdasarkan nama',
+    searchLabel:'Sudah pernah dicek orang lain? Cari ulasan produk berdasarkan nama',
     searchPlaceholder:'cth. Indomie, KitKat, Cadbury...',
     searchBtn:'Cari', searching:'Mencari...',
     searchFound:'Ulasan ditemukan untuk', searchNone:'Belum ada ulasan untuk produk ini. Jadilah yang pertama!',
