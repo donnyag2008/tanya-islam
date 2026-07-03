@@ -408,13 +408,13 @@ function renderResult(r) {
     html += '<div style="margin-bottom:20px;"></div>';
   }
 
+  if (r.advice) html += '<div class="advice-box" style="border-left-color:'+cfg.color+';margin-bottom:20px;">'+r.advice+'</div>';
+
   if (r.safe && r.safe.length) {
     html += '<div class="section-title">'+t('permissible')+'</div><div class="safe-tags">';
     r.safe.forEach(function(s) { html += '<span class="safe-tag">'+esc(s)+'</span>'; });
     html += '</div>';
   }
-
-  if (r.advice) html += '<div class="advice-box" style="border-left-color:'+cfg.color+';">'+r.advice+'</div>';
 
   if (r.sources && r.sources.length) {
     html += '<div style="margin-top:14px;">';
