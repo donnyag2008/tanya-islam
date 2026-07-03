@@ -64,21 +64,30 @@ async function searchQuran(keyword) {
   }
 }
 
-async function fetchAyahEditions(surahNumber, ayahNumber, lang) {
+async function fetchArabicAyah(surahNumber, ayahNumber) {
   try {
-    const editions = lang === 'id' ? 'quran-uthmani,id.indonesian' : 'quran-uthmani,en.sahih';
-    const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:${ayahNumber}/editions/${editions}`);
+    const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:${ayahNumber}/quran-uthmani`);
     const data = await res.json();
-    if (data.code !== 200 || !data.data) return null;
-    const arabic = data.data.find(d => d.edition.identifier === 'quran-uthmani');
-    const translation = data.data.find(d => d.edition.identifier !== 'quran-uthmani');
-    return {
-      arabic: arabic ? arabic.text : '',
-      translation: translation ? translation.text : ''
-    };
+    if (data.code !== 200 || !data.data) return '';
+    return data.data.text || '';
   } catch (e) {
-    return null;
+    return '';
   }
+}
+
+// fetch the target-language translation; try twice before giving up, and NEVER fall back to a different language
+async function fetchTranslationAyah(surahNumber, ayahNumber, lang) {
+  const edition = lang === 'id' ? 'id.indonesian' : 'en.sahih';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:${ayahNumber}/${edition}`);
+      const data = await res.json();
+      if (data.code === 200 && data.data && data.data.text) return data.data.text;
+    } catch (e) {
+      // try again on next loop iteration
+    }
+  }
+  return null; // signal genuine failure — caller must NOT substitute another language's text
 }
 
 async function searchHadith(env, keyword) {
@@ -103,8 +112,8 @@ async function searchHadith(env, keyword) {
 
 async function composeAnswer(env, question, lang, quranResults, hadithResults) {
   const langInstruction = lang === 'id'
-    ? 'Jawab dalam Bahasa Indonesia yang baik dan mudah dipahami.'
-    : 'Answer in clear, simple English.';
+    ? 'Jawab dalam Bahasa Indonesia yang santai tapi tetap sopan dan kredibel — gaya semi-formal yang mudah dipahami anak muda, hindari bahasa yang terlalu kaku atau akademis, tapi tetap hormat saat membahas ayat, hadis, atau pendapat ulama.'
+    : 'Answer in clear, friendly, semi-formal English that a young person could easily follow — approachable and conversational, not stiff or overly academic, while staying respectful when discussing verses, hadith, or scholarly opinions.';
 
   const quranBlock = quranResults.length
     ? quranResults.map(q => `- ${q.ref}: "${q.text}"${q.arabic ? `\n  Arabic: ${q.arabic}` : ''}`).join('\n')
@@ -161,11 +170,16 @@ async function handleAsk(request, env) {
     let quranResults = [];
     if (quranMatches.length) {
       const top = quranMatches[0];
-      const editions = await fetchAyahEditions(top.surahNumber, top.ayahNumber, lang);
+      const [arabicText, translationText] = await Promise.all([
+        fetchArabicAyah(top.surahNumber, top.ayahNumber),
+        fetchTranslationAyah(top.surahNumber, top.ayahNumber, lang)
+      ]);
       quranResults = [{
         ref: top.ref,
-        text: editions ? editions.translation : top.text,
-        arabic: editions ? editions.arabic : ''
+        text: translationText !== null ? translationText : (lang === 'id'
+          ? '[Terjemahan Bahasa Indonesia untuk ayat ini tidak berhasil dimuat — hanya teks Arab yang tersedia]'
+          : top.text),
+        arabic: arabicText
       }];
     }
 
