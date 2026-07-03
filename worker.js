@@ -34,6 +34,7 @@ async function extractKeyword(env, question) {
   const sys = 'Extract the single best English search keyword or short phrase (2-4 words max) ' +
     'that would find relevant Quran verses and Hadith about this Islamic question, regardless of what language the question is in. ' +
     'CRITICAL: if the question names a specific Islamic figure, entity, or term (e.g. Dajjal, Yajuj, Isa, Khidr, Barzakh, Qiyamah), you MUST include that exact term verbatim in your answer — do not paraphrase or generalize it away. ' +
+    'CRITICAL: if the question describes a specific historical/religious EVENT indirectly rather than naming it (e.g. "how the 5 daily prayers were commanded" or "sejarah turunnya perintah sholat" refers to the Isra and Mi\'raj / Night Journey), identify the actual event and use the MOST DISTINCTIVE PROPER NOUN from that event\'s narrative as the keyword — one that would survive translation verbatim — rather than a technical/generalized term that translators might phrase differently. Examples: for Isra and Mi\'raj (the 5 daily prayers being commanded), use "Buraq" (the named creature in the narrative) rather than "Miraj" or "prayer command"; for the migration to Madinah, use "Hijrah"; for early battles, use the specific place name like "Badr" or "Uhud". ' +
     'CRITICAL: for "how many / how often / what time" style questions, extract the SPECIFIC RITUAL OR PRACTICE being asked about (e.g. "prayer" or "salah" for prayer count questions, "fasting" for fasting questions) — NEVER use generic words like "time", "times", "day", "count", or "number" as the keyword, since these are common words that will match completely unrelated text in a substring search. ' +
     'Respond with ONLY the keyword phrase, nothing else, no punctuation, no explanation.';
   const raw = await callClaude(env, sys, question, 30, 'claude-haiku-4-5-20251001');
@@ -71,8 +72,8 @@ async function filterRelevant(env, question, quranMatches, hadithResults) {
 
     const keptLabels = kept.split(',').map(s => s.trim().toUpperCase());
     return {
-      quranMatches: quranMatches.filter((_, i) => keptLabels.includes(`Q${i}`)),
-      hadithResults: hadithResults.filter((_, i) => keptLabels.includes(`H${i}`))
+      quranMatches: quranMatches.filter((_, i) => keptLabels.includes(`Q${i}`)).slice(0, 3),
+      hadithResults: hadithResults.filter((_, i) => keptLabels.includes(`H${i}`)).slice(0, 5)
     };
   } catch (e) {
     // if the relevance check itself fails, don't block the whole flow — keep original candidates
@@ -129,7 +130,7 @@ async function searchQuran(keyword) {
     const res = await fetch(`https://api.alquran.cloud/v1/search/${encoded}/all/en`);
     const data = await res.json();
     if (data.code !== 200 || !data.data || !data.data.matches || !data.data.matches.length) return [];
-    return data.data.matches.slice(0, 3).map(m => ({
+    return data.data.matches.slice(0, 6).map(m => ({
       surah: m.surah.englishName,
       surahNumber: m.surah.number,
       ayahNumber: m.numberInSurah,
@@ -184,10 +185,10 @@ async function searchHadith(env, keyword) {
   if (!env.HADITH_API_KEY) return [];
   try {
     const encoded = encodeURIComponent(keyword);
-    const res = await fetch(`https://hadithapi.com/api/hadiths/?apiKey=${env.HADITH_API_KEY}&hadithEnglish=${encoded}&paginate=5`);
+    const res = await fetch(`https://hadithapi.com/api/hadiths/?apiKey=${env.HADITH_API_KEY}&hadithEnglish=${encoded}&paginate=20`);
     const data = await res.json();
     const hadiths = data?.hadiths?.data || [];
-    return hadiths.slice(0, 5).map(h => ({
+    return hadiths.slice(0, 20).map(h => ({
       text: h.hadithEnglish,
       book: h.book?.bookName || '',
       chapter: h.chapter?.chapterEnglish || '',
@@ -221,6 +222,9 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `Only say no relevant information was found if the retrieved text below is truly empty or completely unrelated to the topic. ` +
     `If RETRIEVED TAFSIR (Ibn Kathir) below is non-empty and relevant, summarize his commentary in the "tafsir" field, explicitly attributed to Ibn Kathir — do not invent commentary from any other scholar (e.g. never attribute anything to Buya Hamka or Al-Ghazali, since their commentary is not available in the retrieved sources). ` +
     `For any question of fiqh (rulings) that differs between the four Madhabs (Hanafi, Maliki, Shafi'i, Hanbali), note that scholars differ and advise consulting a qualified local scholar rather than stating a single ruling as definitive. ` +
+    `CONTENT POLICY — sensitive fiqh topics: many users (including teenagers) use this app because they're too shy to ask a sheikh in person about legitimate but personal topics — ghusl, menstruation and purity rulings, marital intimacy, and similar. When retrieved sources cover these, answer factually and respectfully, in the same plain educational register a health class or Islamic studies textbook would use — informative and complete, but never graphic or gratuitously detailed. Use the same measured, clinical terms the Quran/Hadith/fiqh sources themselves use. Do not refuse or deflect a sincere question on these topics just because it feels awkward — that shyness is exactly why this app exists. ` +
+    `CONTENT POLICY — off-topic questions: if the question has nothing to do with Islam at all (e.g. random trivia, homework help, jokes, or clearly trying to bait an unrelated/inappropriate response), first check honestly whether the retrieved Quran/Hadith below actually address any real Islamic angle of it. If genuinely none exists, politely note in the "answer" field that this app answers questions about Islam grounded in Quran and Hadith, and invite the user to ask something in that space — keep it brief and friendly, not preachy. ` +
+    `CHILD SAFETY: since some users may be minors, never produce sexual, graphic, or romantic content under any framing, even if a question is phrased to try to elicit that — for topics like marital intimacy, stay at the level of what is actually stated in the retrieved fiqh source (rulings, permissibility, etiquette) without descriptive detail. ` +
     `IMPORTANT: the "quran" field must be an ARRAY, one entry per verse listed under RETRIEVED QURAN VERSES below — do not pick just one if multiple were retrieved and are relevant. Each entry must be an object: {"ref":"the verse reference","arabic":"the Arabic text of that verse","text":"the translation"}. If none are relevant, use an empty array. ` +
     `IMPORTANT: the "hadith" field must be an ARRAY OF PLAIN STRINGS (not objects) containing EVERY hadith listed under RETRIEVED HADITH below — one string per hadith, translated into the target language. Each string should read like "Reference: hadith text" combined together as ONE string — do NOT use {"ref":...,"text":...} object format. Do NOT merge multiple hadith into one entry, do NOT summarize them together, and do NOT omit any of them — if 4 hadith were retrieved, return 4 array entries. ` +
     `CRITICAL JSON SAFETY: this response will be parsed as JSON. When quoting speech (e.g. what the Prophet or a narrator said), ALWAYS use single quotes ' around the quoted words, never double quotes " — double quotes inside a field's text will break the JSON structure. Keep every field value on a single line with no literal line breaks inside it (use a space instead of a line break). ` +
