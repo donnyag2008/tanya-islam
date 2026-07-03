@@ -10,107 +10,110 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --green: #22c55e; --green-dark: #16a34a; --red: #ef4444; --amber: #f59e0b;
-    --bg: #0f1117; --surface: #1a1f2e; --border: rgba(255,255,255,0.08);
-    --text: #e8e0d4; --muted: rgba(255,255,255,0.4);
+    --gold: #c9a84c; --gold-dark: #a07830; --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
+    --bg: #faf7f2; --surface: #fff; --border: #e8d9b8;
+    --text: #4a3820; --muted: #a09070;
+    --header-bg: #12161c;
   }
-  body { min-height:100vh; background:var(--bg); font-family:Georgia,serif; color:var(--text); }
-  .back-link { display:block; text-align:center; padding:10px; font-size:12px; color:rgba(255,255,255,0.35); text-decoration:none; background:rgba(0,0,0,0.2); }
-  .back-link:hover { color:var(--green); }
-  header { background:linear-gradient(135deg,var(--surface) 0%,var(--bg) 100%); border-bottom:1px solid var(--border); padding:36px 24px 30px; text-align:center; position:relative; overflow:hidden; }
-  header::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse at 20% 50%,rgba(34,197,94,0.07) 0%,transparent 60%); pointer-events:none; }
-  .lang-toggle { position:absolute; top:16px; right:16px; display:flex; background:rgba(255,255,255,0.06); border-radius:20px; padding:3px; border:1px solid var(--border); z-index:10; }
-  .lang-btn { padding:5px 12px; border:none; border-radius:16px; cursor:pointer; font-size:12px; font-family:Georgia,serif; font-weight:600; background:transparent; color:var(--muted); transition:all 0.2s; }
-  .lang-btn.active { background:var(--green); color:#0f1117; }
+  body { min-height:100vh; background:var(--bg); font-family:'Inter',sans-serif; color:var(--text); }
+  .back-link { display:block; text-align:center; padding:10px; font-size:12px; color:#8a7050; text-decoration:none; background:var(--header-bg); }
+  .back-link:hover { color:var(--gold); }
+  header { background: url('mosque-hero.jpg') center 60%/cover no-repeat; background-color:var(--header-bg); border-radius:20px; padding:36px 24px 30px; margin-bottom:24px; text-align:center; position:relative; overflow:hidden; }
+  header::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg, rgba(10,14,20,0.6) 0%, rgba(10,14,20,0.45) 55%, rgba(10,14,20,0.7) 100%); pointer-events:none; }
+  header > * { position:relative; z-index:1; }
+  .lang-toggle { position:absolute; top:16px; right:16px; display:flex; background:rgba(255,255,255,0.1); border-radius:20px; padding:3px; border:1px solid rgba(255,255,255,0.15); z-index:10; }
+  .halal-badge { position:absolute; top:14px; left:16px; height:44px; width:auto; z-index:10; opacity:0.92; }
+  .lang-btn { padding:5px 12px; border:none; border-radius:16px; cursor:pointer; font-size:12px; font-family:'Inter',sans-serif; font-weight:600; background:transparent; color:rgba(255,255,255,0.5); transition:all 0.2s; }
+  .lang-btn.active { background:var(--gold); color:#12161c; }
   .logo { font-size:42px; margin-bottom:10px; }
-  header h1 { font-size:30px; font-weight:700; color:#fff; margin-bottom:6px; }
-  header p { font-size:14px; color:var(--muted); font-style:italic; }
+  header h1 { font-size:30px; font-weight:700; color:#e8c977; margin-bottom:6px; }
+  header p { font-size:14px; color:#cbb98f; font-style:italic; }
   .badges { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
-  .badge { font-size:11px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.06); border:1px solid var(--border); color:var(--muted); }
+  .badge { font-size:11px; padding:4px 12px; border-radius:20px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); color:#cbb98f; }
   .container { max-width:580px; margin:0 auto; padding:30px 20px 60px; }
 
-  .search-box { background:rgba(255,200,0,0.05); border:1px solid rgba(255,200,0,0.15); border-radius:12px; padding:16px; margin-bottom:24px; }
-  .search-box label { display:block; font-size:12px; color:rgba(255,200,0,0.7); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
+  .search-box { background:#fdf3dc; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:24px; }
+  .search-box label { display:block; font-size:12px; color:var(--gold-dark); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
   .search-row { display:flex; gap:8px; }
-  .search-input { flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(255,200,0,0.2); border-radius:8px; padding:10px 14px; color:var(--text); font-size:14px; font-family:Georgia,serif; outline:none; }
-  .search-input::placeholder { color:rgba(255,255,255,0.2); }
-  .search-btn { padding:10px 16px; background:rgba(255,200,0,0.15); border:1px solid rgba(255,200,0,0.3); border-radius:8px; color:rgba(255,200,0,0.8); font-size:13px; font-family:Georgia,serif; cursor:pointer; }
+  .search-input { flex:1; background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; outline:none; }
+  .search-input::placeholder { color:#c0b090; }
+  .search-btn { padding:10px 16px; background:var(--gold); border:1px solid var(--gold-dark); border-radius:8px; color:#12161c; font-size:13px; font-weight:600; font-family:'Inter',sans-serif; cursor:pointer; }
   .prev-box { margin-top:12px; display:none; }
-  .prev-title { font-size:13px; color:rgba(255,200,0,0.7); margin-bottom:10px; }
-  .prev-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
+  .prev-title { font-size:13px; color:var(--gold-dark); margin-bottom:10px; }
+  .prev-card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px; }
   .prev-card-header { display:flex; justify-content:space-between; margin-bottom:4px; }
-  .prev-card-product { font-weight:700; font-size:13px; color:#fff; }
+  .prev-card-product { font-weight:700; font-size:13px; color:var(--text); }
   .prev-card-stars { color:var(--amber); font-size:13px; margin-bottom:4px; }
-  .prev-card-comment { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.5; }
-  .prev-card-meta { font-size:11px; color:rgba(255,255,255,0.25); margin-top:4px; }
+  .prev-card-comment { font-size:13px; color:var(--muted); line-height:1.5; }
+  .prev-card-meta { font-size:11px; color:#c0b090; margin-top:4px; }
 
-  .mode-toggle { display:flex; background:rgba(255,255,255,0.05); border-radius:12px; padding:4px; margin-bottom:24px; border:1px solid var(--border); }
-  .mode-btn { flex:1; padding:11px 16px; border:none; border-radius:9px; cursor:pointer; font-size:14px; font-family:Georgia,serif; font-weight:600; transition:all 0.2s; background:transparent; color:var(--muted); }
-  .mode-btn.active { background:var(--green); color:#0f1117; }
+  .mode-toggle { display:flex; background:#fdf3dc; border-radius:12px; padding:4px; margin-bottom:24px; border:1px solid var(--border); }
+  .mode-btn { flex:1; padding:11px 16px; border:none; border-radius:9px; cursor:pointer; font-size:14px; font-family:'Inter',sans-serif; font-weight:600; transition:all 0.2s; background:transparent; color:var(--muted); }
+  .mode-btn.active { background:var(--gold); color:#12161c; }
   .input-label { display:block; font-size:12px; color:var(--muted); margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; }
-  textarea { width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:12px; padding:14px 16px; color:var(--text); font-size:14px; font-family:Georgia,serif; resize:vertical; outline:none; line-height:1.6; margin-bottom:20px; min-height:130px; }
-  textarea:focus { border-color:rgba(34,197,94,0.4); }
-  textarea::placeholder { color:rgba(255,255,255,0.2); }
-  .drop-zone { border:2px dashed rgba(255,255,255,0.15); border-radius:12px; padding:40px 20px; text-align:center; cursor:pointer; background:rgba(255,255,255,0.03); transition:all 0.2s; margin-bottom:20px; }
-  .drop-zone:hover { border-color:var(--green); background:rgba(34,197,94,0.05); }
+  textarea { width:100%; background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; resize:vertical; outline:none; line-height:1.6; margin-bottom:20px; min-height:130px; }
+  textarea:focus { border-color:var(--gold); }
+  textarea::placeholder { color:#c0b090; }
+  .drop-zone { border:2px dashed var(--border); border-radius:12px; padding:40px 20px; text-align:center; cursor:pointer; background:#fdf3dc; transition:all 0.2s; margin-bottom:20px; }
+  .drop-zone:hover { border-color:var(--gold); background:#fbe9c4; }
   .dz-icon { font-size:42px; margin-bottom:12px; }
-  .dz-title { font-size:15px; color:rgba(255,255,255,0.6); margin-bottom:4px; }
-  .dz-sub { font-size:12px; color:rgba(255,255,255,0.3); }
+  .dz-title { font-size:15px; color:var(--text); margin-bottom:4px; }
+  .dz-sub { font-size:12px; color:var(--muted); }
   #preview-img { max-width:100%; max-height:280px; border-radius:8px; display:block; margin:0 auto; }
-  #remove-img { margin-top:12px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:var(--red); border-radius:8px; padding:6px 16px; cursor:pointer; font-size:13px; font-family:Georgia,serif; }
-  #check-btn { width:100%; padding:16px; background:var(--green); border:none; border-radius:12px; color:#0f1117; font-size:16px; font-weight:700; font-family:Georgia,serif; cursor:pointer; transition:all 0.2s; margin-bottom:24px; }
-  #check-btn:disabled { background:rgba(34,197,94,0.25); color:rgba(255,255,255,0.3); cursor:not-allowed; }
-  .error-box { background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:14px 16px; color:var(--red); font-size:14px; margin-bottom:20px; display:none; }
+  #remove-img { margin-top:12px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:var(--red); border-radius:8px; padding:6px 16px; cursor:pointer; font-size:13px; font-family:'Inter',sans-serif; }
+  #check-btn { width:100%; padding:16px; background:var(--gold); border:none; border-radius:12px; color:#12161c; font-size:16px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; margin-bottom:24px; }
+  #check-btn:disabled { background:#e8d9b8; color:#c0b090; cursor:not-allowed; }
+  .error-box { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.25); border-radius:12px; padding:14px 16px; color:#c0392b; font-size:14px; margin-bottom:20px; display:none; }
   .result-wrap { display:none; }
   .result-inner { border-radius:16px; padding:26px 22px; animation:fadeIn 0.4s ease; }
   .verdict-badge { text-align:center; margin-bottom:20px; }
   .verdict-pill { display:inline-flex; align-items:center; gap:10px; border:2px solid; border-radius:50px; padding:9px 28px; }
   .verdict-text { font-size:24px; font-weight:800; letter-spacing:2px; }
   .confidence { margin-top:8px; font-size:12px; color:var(--muted); }
-  .summary-text { text-align:center; font-size:15px; color:rgba(255,255,255,0.8); margin:0 0 20px; line-height:1.6; font-style:italic; }
+  .summary-text { text-align:center; font-size:15px; color:var(--text); margin:0 0 20px; line-height:1.6; font-style:italic; }
   hr { border:none; border-top:1px solid var(--border); margin:0 0 20px; }
   .section-title { font-size:12px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
   .flagged-item { border-radius:10px; padding:10px 14px; margin-bottom:8px; }
   .flagged-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
-  .flagged-name { font-weight:700; font-size:14px; color:#fff; }
+  .flagged-name { font-weight:700; font-size:14px; color:var(--text); }
   .flagged-sev { font-size:11px; font-weight:700; letter-spacing:1px; }
-  .flagged-reason { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.5; }
+  .flagged-reason { font-size:13px; color:var(--muted); line-height:1.5; }
   .safe-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
-  .safe-tag { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); border-radius:20px; padding:4px 12px; font-size:13px; color:#86efac; }
-  .advice-box { background:rgba(255,255,255,0.04); border-radius:10px; padding:12px 14px; font-size:13px; color:rgba(255,255,255,0.6); line-height:1.6; border-left:3px solid; }
+  .safe-tag { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); border-radius:20px; padding:4px 12px; font-size:13px; color:#16a34a; }
+  .advice-box { background:#fdf3dc; border-radius:10px; padding:12px 14px; font-size:13px; color:var(--text); line-height:1.6; border-left:3px solid; }
   .share-row { display:flex; gap:8px; margin-top:16px; }
-  .share-btn { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,0.04); color:var(--muted); font-size:13px; font-family:Georgia,serif; cursor:pointer; transition:all 0.2s; }
-  .share-btn:hover { background:rgba(255,255,255,0.08); color:#fff; }
+  .share-btn { flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:#fdf3dc; color:var(--gold-dark); font-size:13px; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.2s; }
+  .share-btn:hover { background:var(--gold); color:#12161c; }
 
-  .review-form { margin-top:24px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:16px; padding:20px; }
-  .review-form h3 { font-size:15px; color:#fff; margin-bottom:16px; }
+  .review-form { margin-top:24px; background:#fdf3dc; border:1px solid var(--border); border-radius:16px; padding:20px; }
+  .review-form h3 { font-size:15px; color:var(--text); margin-bottom:16px; }
   .star-row { display:flex; gap:8px; margin-bottom:16px; }
-  .star { font-size:28px; cursor:pointer; color:rgba(255,255,255,0.2); transition:all 0.15s; line-height:1; }
+  .star { font-size:28px; cursor:pointer; color:#e0d0a8; transition:all 0.15s; line-height:1; }
   .star.active { color:var(--amber); }
   .review-inputs { display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
-  .review-input { background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-size:14px; font-family:Georgia,serif; outline:none; }
-  .review-input::placeholder { color:rgba(255,255,255,0.2); }
+  .review-input { background:#fff; border:1px solid var(--border); border-radius:10px; padding:10px 14px; color:var(--text); font-size:14px; font-family:'Inter',sans-serif; outline:none; }
+  .review-input::placeholder { color:#c0b090; }
   textarea.review-input { min-height:80px; resize:vertical; }
-  .submit-btn { width:100%; padding:12px; background:var(--green); border:none; border-radius:10px; color:#0f1117; font-size:14px; font-weight:700; font-family:Georgia,serif; cursor:pointer; }
-  .submit-btn:disabled { background:rgba(34,197,94,0.25); color:rgba(255,255,255,0.3); cursor:not-allowed; }
-  .review-success { text-align:center; padding:12px; color:var(--green); font-size:14px; display:none; }
+  .submit-btn { width:100%; padding:12px; background:var(--gold); border:none; border-radius:10px; color:#12161c; font-size:14px; font-weight:700; font-family:'Inter',sans-serif; cursor:pointer; }
+  .submit-btn:disabled { background:#e8d9b8; color:#c0b090; cursor:not-allowed; }
+  .review-success { text-align:center; padding:12px; color:#16a34a; font-size:14px; display:none; }
 
   .reviews-section { margin-top:36px; }
-  .reviews-section h2 { font-size:18px; color:#fff; margin-bottom:16px; }
-  .review-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
+  .reviews-section h2 { font-size:18px; color:var(--text); margin-bottom:16px; }
+  .review-card { background:#fff; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; }
   .review-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
-  .review-product { font-weight:700; font-size:14px; color:#fff; flex:1; margin-right:8px; }
+  .review-product { font-weight:700; font-size:14px; color:var(--text); flex:1; margin-right:8px; }
   .status-badge { font-size:11px; font-weight:700; letter-spacing:1px; padding:3px 10px; border-radius:20px; }
-  .status-HALAL { background:rgba(34,197,94,0.15); color:var(--green); }
+  .status-HALAL { background:rgba(34,197,94,0.15); color:#16a34a; }
   .status-HARAM { background:rgba(239,68,68,0.15); color:var(--red); }
   .status-MASHBOOH { background:rgba(245,158,11,0.15); color:var(--amber); }
   .review-stars { color:var(--amber); font-size:14px; margin-bottom:6px; }
-  .review-comment { font-size:13px; color:rgba(255,255,255,0.6); line-height:1.6; margin-bottom:8px; }
-  .review-meta { font-size:11px; color:rgba(255,255,255,0.25); }
-  .load-more-btn { width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:14px; font-family:Georgia,serif; cursor:pointer; margin-top:8px; }
+  .review-comment { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:8px; }
+  .review-meta { font-size:11px; color:#c0b090; }
+  .load-more-btn { width:100%; padding:12px; background:transparent; border:1px solid var(--border); border-radius:10px; color:var(--muted); font-size:14px; font-family:'Inter',sans-serif; cursor:pointer; margin-top:8px; }
   .no-reviews { text-align:center; padding:30px; color:var(--muted); font-size:14px; font-style:italic; }
-  .disclaimer { text-align:center; font-size:11px; color:rgba(255,255,255,0.18); margin-top:24px; line-height:1.7; }
-  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.2); border-top-color:rgba(255,255,255,0.6); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
+  .disclaimer { text-align:center; font-size:11px; color:#c0b090; margin-top:24px; line-height:1.7; }
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(18,22,28,0.2); border-top-color:rgba(18,22,28,0.6); border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   @keyframes spin { to{transform:rotate(360deg)} }
   #text-panel { display:block; }
@@ -119,21 +122,22 @@
 </head>
 <body>
 <a class="back-link" href="index.html">&larr; Tanya Islam</a>
-<header>
-  <div class="lang-toggle">
-    <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
-    <button class="lang-btn" id="btn-id" onclick="setLang('id')">ID</button>
-  </div>
-  <div class="logo">&#9775;</div>
-  <h1>Halal Checker</h1>
-  <p id="hdr-sub">AI-powered Islamic dietary compliance - free to use</p>
-  <div class="badges">
-    <span class="badge">Indonesia</span><span class="badge">Malaysia</span>
-    <span class="badge">Singapore</span><span class="badge">UK</span><span class="badge">Worldwide</span>
-  </div>
-</header>
 
 <div class="container">
+  <header>
+    <img src="halal-badge.png" alt="Halal" class="halal-badge" />
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="btn-id" onclick="setLang('id')">ID</button>
+    </div>
+    <div class="logo"><svg width="42" height="42" viewBox="0 0 64 64"><circle cx="32" cy="32" r="18" fill="#e8c977"/><circle cx="38" cy="28" r="14" fill="#12161c"/><polygon points="44,10 45.5,14.5 50,14.5 46.5,17.5 48,22 44,19 40,22 41.5,17.5 38,14.5 42.5,14.5" fill="#e8c977"/></svg></div>
+    <h1>Halal Checker</h1>
+    <p id="hdr-sub">AI-powered Islamic dietary compliance - free to use</p>
+    <div class="badges">
+      <span class="badge">Indonesia</span><span class="badge">Malaysia</span>
+      <span class="badge">Singapore</span><span class="badge">UK</span><span class="badge">Worldwide</span>
+    </div>
+  </header>
 
   <div class="search-box">
     <label id="lbl-search">Search previous reviews by product name</label>
@@ -170,7 +174,7 @@
         <button id="remove-img" onclick="removeImage(event)">Remove and Retake</button>
       </div>
     </div>
-    <input type="file" id="file-input" accept="image/*" style="display:none;" onchange="handleFile(this.files[0])" />
+    <input type="file" id="file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFile(this.files[0])" />
   </div>
 
   <button id="check-btn" onclick="runCheck()">Check Halal Status</button>
