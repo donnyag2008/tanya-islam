@@ -9,7 +9,7 @@ const CORS_HEADERS = {
 };
 
 // ---------- call Claude ----------
-async function callClaude(env, system, userText, maxTokens) {
+async function callClaude(env, system, userText, maxTokens, model = 'claude-sonnet-4-6') {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -18,7 +18,7 @@ async function callClaude(env, system, userText, maxTokens) {
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: model,
       max_tokens: maxTokens,
       system: system,
       messages: [{ role: 'user', content: userText }]
@@ -35,15 +35,18 @@ async function extractKeyword(env, question) {
     'that would find relevant Quran verses and Hadith about this Islamic question, regardless of what language the question is in. ' +
     'CRITICAL: if the question names a specific Islamic figure, entity, or term (e.g. Dajjal, Yajuj, Isa, Khidr, Barzakh, Qiyamah), you MUST include that exact term verbatim in your answer — do not paraphrase or generalize it away. ' +
     'Respond with ONLY the keyword phrase, nothing else, no punctuation, no explanation.';
-  const raw = await callClaude(env, sys, question, 30);
+  const raw = await callClaude(env, sys, question, 30, 'claude-haiku-4-5-20251001');
   return raw.trim().replace(/^["']|["']$/g, '');
 }
 
 async function extractBroaderKeyword(env, question) {
-  const sys = 'Give ONE single general English topic word (e.g. "fasting", "marriage", "prayer", "usury", "inheritance") ' +
-    'that best categorizes this Islamic question, regardless of what language the question is in. ' +
+  const sys = 'Give ONE single English search word that best categorizes this Islamic question, regardless of what language the question is in. ' +
+    'IMPORTANT: if the question is about a MODERN topic with no direct textual coverage in classical Quran/Hadith (e.g. cryptocurrency, stock trading, insurance, subscription services, social media, loans, investment apps), ' +
+    'do NOT pick a vague or unrelated word — instead pick the closest classical Islamic finance/legal concept AS IT WOULD APPEAR IN AN ENGLISH TRANSLATION of Hadith text (not an Arabic transliteration). Examples: ' +
+    'cryptocurrency/stock trading/speculation -> "gambling" or "uncertainty"; interest-based loans/credit cards -> "usury" or "interest"; insurance -> "uncertainty"; gambling apps/lotteries -> "gambling"; general business deals -> "trade". ' +
+    'For questions already about classical topics (fasting, marriage, prayer, etc.), just give that topic word directly in plain English. ' +
     'Respond with ONLY that one word, nothing else.';
-  const raw = await callClaude(env, sys, question, 15);
+  const raw = await callClaude(env, sys, question, 15, 'claude-haiku-4-5-20251001');
   return raw.trim().replace(/^["']|["']$/g, '');
 }
 
