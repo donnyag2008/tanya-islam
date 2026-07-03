@@ -34,6 +34,7 @@ async function extractKeyword(env, question) {
   const sys = 'Extract the single best English search keyword or short phrase (2-4 words max) ' +
     'that would find relevant Quran verses and Hadith about this Islamic question, regardless of what language the question is in. ' +
     'CRITICAL: if the question names a specific Islamic figure, entity, or term (e.g. Dajjal, Yajuj, Isa, Khidr, Barzakh, Qiyamah), you MUST include that exact term verbatim in your answer — do not paraphrase or generalize it away. ' +
+    'CRITICAL: for "how many / how often / what time" style questions, extract the SPECIFIC RITUAL OR PRACTICE being asked about (e.g. "prayer" or "salah" for prayer count questions, "fasting" for fasting questions) — NEVER use generic words like "time", "times", "day", "count", or "number" as the keyword, since these are common words that will match completely unrelated text in a substring search. ' +
     'Respond with ONLY the keyword phrase, nothing else, no punctuation, no explanation.';
   const raw = await callClaude(env, sys, question, 30, 'claude-haiku-4-5-20251001');
   return raw.trim().replace(/^["']|["']$/g, '');
@@ -48,6 +49,35 @@ async function extractBroaderKeyword(env, question) {
     'Respond with ONLY that one word, nothing else.';
   const raw = await callClaude(env, sys, question, 15, 'claude-haiku-4-5-20251001');
   return raw.trim().replace(/^["']|["']$/g, '');
+}
+
+async function filterRelevant(env, question, quranMatches, hadithResults) {
+  if (!quranMatches.length && !hadithResults.length) return { quranMatches, hadithResults };
+
+  const items = [];
+  quranMatches.forEach((m, i) => items.push(`Q${i}: ${m.ref} — "${m.text}"`));
+  hadithResults.forEach((h, i) => items.push(`H${i}: ${h.ref} — "${h.text}"`));
+
+  const sys = 'You will see a question and a numbered list of candidate Quran verses (Q#) and Hadith (H#) found by a keyword search. ' +
+    'Some may only share a common word with the question but are NOT actually on-topic (e.g. a hadith about choosing when to give a sermon is NOT relevant to a question about how many times Muslims pray, even if both mention "time"). ' +
+    'Decide which items are GENUINELY relevant and would help answer the question. ' +
+    'Respond with ONLY a comma-separated list of the relevant item labels (e.g. "Q0,H1,H2"), or the word "none" if nothing is genuinely relevant. No explanation.';
+  const userText = `Question: ${question}\n\nCandidates:\n${items.join('\n')}`;
+
+  try {
+    const raw = await callClaude(env, sys, userText, 60, 'claude-haiku-4-5-20251001');
+    const kept = raw.trim().toLowerCase();
+    if (kept === 'none' || !kept) return { quranMatches: [], hadithResults: [] };
+
+    const keptLabels = kept.split(',').map(s => s.trim().toUpperCase());
+    return {
+      quranMatches: quranMatches.filter((_, i) => keptLabels.includes(`Q${i}`)),
+      hadithResults: hadithResults.filter((_, i) => keptLabels.includes(`H${i}`))
+    };
+  } catch (e) {
+    // if the relevance check itself fails, don't block the whole flow — keep original candidates
+    return { quranMatches, hadithResults };
+  }
 }
 
 async function searchQuran(keyword) {
@@ -148,7 +178,7 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
     `Only say no relevant information was found if the retrieved text below is truly empty or completely unrelated to the topic. ` +
     `If RETRIEVED TAFSIR (Ibn Kathir) below is non-empty and relevant, summarize his commentary in the "tafsir" field, explicitly attributed to Ibn Kathir — do not invent commentary from any other scholar (e.g. never attribute anything to Buya Hamka or Al-Ghazali, since their commentary is not available in the retrieved sources). ` +
     `For any question of fiqh (rulings) that differs between the four Madhabs (Hanafi, Maliki, Shafi'i, Hanbali), note that scholars differ and advise consulting a qualified local scholar rather than stating a single ruling as definitive. ` +
-    `IMPORTANT: the "hadith" field must be an ARRAY containing EVERY hadith listed under RETRIEVED HADITH below — one array entry per hadith, translated into the target language. Do NOT merge multiple hadith into one entry, do NOT summarize them together, and do NOT omit any of them — if 4 hadith were retrieved, return 4 array entries. Each entry should include its reference and its full text. ` +
+    `IMPORTANT: the "hadith" field must be an ARRAY OF PLAIN STRINGS (not objects) containing EVERY hadith listed under RETRIEVED HADITH below — one string per hadith, translated into the target language. Each string should read like "Reference: hadith text" combined together as ONE string — do NOT use {"ref":...,"text":...} object format. Do NOT merge multiple hadith into one entry, do NOT summarize them together, and do NOT omit any of them — if 4 hadith were retrieved, return 4 array entries. ` +
     `CRITICAL JSON SAFETY: this response will be parsed as JSON. When quoting speech (e.g. what the Prophet or a narrator said), ALWAYS use single quotes ' around the quoted words, never double quotes " — double quotes inside a field's text will break the JSON structure. Keep every field value on a single line with no literal line breaks inside it (use a space instead of a line break). ` +
     langInstruction +
     ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
@@ -208,6 +238,17 @@ async function composeAnswer(env, question, lang, quranResults, hadithResults, t
   };
 }
 
+function hadithItemToString(item) {
+  if (typeof item === 'string') return item;
+  if (item && typeof item === 'object') {
+    const ref = item.ref || item.reference || item.book || '';
+    const text = item.text || item.content || item.hadith || item.translation || '';
+    if (ref || text) return [ref, text].filter(Boolean).join(': ');
+    try { return JSON.stringify(item); } catch (e) { return String(item); }
+  }
+  return String(item);
+}
+
 async function handleAsk(request, env) {
   try {
     const body = await request.json();
@@ -248,6 +289,10 @@ async function handleAsk(request, env) {
       }
     }
 
+    // filter out false-positive substring matches (e.g. a hadith that only shares a common word
+    // with the question but isn't actually on-topic) before using them in the final answer
+    ({ quranMatches, hadithResults } = await filterRelevant(env, question, quranMatches, hadithResults));
+
     let quranResults = [];
     let tafsirText = '';
     if (quranMatches.length) {
@@ -272,7 +317,8 @@ async function handleAsk(request, env) {
     // safety net: if hadith were genuinely retrieved but Claude's JSON came back without them
     // (empty array, wrong type, or omitted), show the actual retrieved hadith directly rather
     // than silently losing them — reliability here should not depend on the model's JSON compliance
-    const hadithFromModel = Array.isArray(parsed.hadith) ? parsed.hadith : (parsed.hadith ? [parsed.hadith] : []);
+    const hadithFromModelRaw = Array.isArray(parsed.hadith) ? parsed.hadith : (parsed.hadith ? [parsed.hadith] : []);
+    const hadithFromModel = hadithFromModelRaw.map(hadithItemToString);
     if (!hadithFromModel.length && hadithResults.length) {
       const note = lang === 'id' ? ' [teks asli Inggris, terjemahan gagal dimuat]' : '';
       parsed.hadith = hadithResults.map(h => `${h.ref}: ${h.text}${note}`);
