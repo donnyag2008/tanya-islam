@@ -516,6 +516,65 @@ async function fetchCoreDietaryVerses(lang) {
 }
 
 // detect classical haram keywords in ingredient text to decide whether a targeted hadith search is worth running
+// curated E-number halal-status reference — starter set covering the additives that actually matter
+// for halal purposes (real animal/plant sourcing ambiguity). Classified conservatively: MASHBOOH
+// wherever sourcing genuinely varies or scholars disagree, rather than guessing a definitive side.
+// This is a growing table — add more entries over time as needed.
+const E_NUMBER_DATABASE = {
+  'E100': { status: 'HALAL', name: 'Curcumin', note: 'Plant-derived (turmeric), no animal sourcing concern.' },
+  'E120': { status: 'MASHBOOH', name: 'Cochineal/Carmine', note: 'Insect-derived (crushed cochineal beetles). Permissibility of insects is genuinely disputed between madhabs — Hanafi generally prohibits, others permit.' },
+  'E140': { status: 'HALAL', name: 'Chlorophyll', note: 'Plant-derived, no animal sourcing concern.' },
+  'E141': { status: 'HALAL', name: 'Chlorophyll copper complex', note: 'Plant-derived, no animal sourcing concern.' },
+  'E160a': { status: 'HALAL', name: 'Carotenes', note: 'Usually plant-derived or synthetic, no animal sourcing concern.' },
+  'E162': { status: 'HALAL', name: 'Beetroot Red', note: 'Plant-derived, no animal sourcing concern.' },
+  'E163': { status: 'HALAL', name: 'Anthocyanins', note: 'Plant-derived, no animal sourcing concern.' },
+  'E170': { status: 'HALAL', name: 'Calcium carbonate', note: 'Mineral-derived, no animal sourcing concern.' },
+  'E270': { status: 'MASHBOOH', name: 'Lactic acid', note: 'Usually produced by bacterial fermentation of plant sugars (generally halal), but can occasionally involve dairy-derived starting material or animal-derived enzymes — source often unstated on labels.' },
+  'E300': { status: 'HALAL', name: 'Ascorbic acid (Vitamin C)', note: 'Typically synthetic or plant-derived, no animal sourcing concern.' },
+  'E322': { status: 'MASHBOOH', name: 'Lecithin', note: 'Usually soy or sunflower-derived (halal), but can occasionally be egg-derived — source not always stated.' },
+  'E325': { status: 'MASHBOOH', name: 'Sodium lactate', note: 'Same sourcing ambiguity as lactic acid (E270).' },
+  'E326': { status: 'MASHBOOH', name: 'Potassium lactate', note: 'Same sourcing ambiguity as lactic acid (E270).' },
+  'E327': { status: 'MASHBOOH', name: 'Calcium lactate', note: 'Same sourcing ambiguity as lactic acid (E270).' },
+  'E330': { status: 'HALAL', name: 'Citric acid', note: 'Produced by fermentation, no animal sourcing concern.' },
+  'E401': { status: 'HALAL', name: 'Sodium alginate', note: 'Seaweed-derived, no animal sourcing concern.' },
+  'E407': { status: 'HALAL', name: 'Carrageenan', note: 'Seaweed-derived, no animal sourcing concern.' },
+  'E410': { status: 'HALAL', name: 'Locust bean gum', note: 'Plant-derived (carob seed), no animal sourcing concern.' },
+  'E412': { status: 'HALAL', name: 'Guar gum', note: 'Plant-derived, no animal sourcing concern.' },
+  'E422': { status: 'MASHBOOH', name: 'Glycerol/Glycerine', note: 'Can be derived from animal fat or plant oil — source frequently not stated on labels.' },
+  'E430': { status: 'MASHBOOH', name: 'Polyoxyethylene stearate', note: 'Stearate can be animal or plant-derived — source often unstated.' },
+  'E431': { status: 'MASHBOOH', name: 'Polyoxyethylene stearate', note: 'Same sourcing ambiguity as E430.' },
+  'E440': { status: 'HALAL', name: 'Pectin', note: 'Plant-derived (fruit), no animal sourcing concern.' },
+  'E441': { status: 'MASHBOOH', name: 'Gelatin', note: 'Animal-derived (bone/skin) — halal only if from a halal-slaughtered source, which is rarely stated on labels.' },
+  'E470': { status: 'MASHBOOH', name: 'Fatty acid salts', note: 'Fatty acid source can be animal or plant — often unstated.' },
+  'E471': { status: 'MASHBOOH', name: 'Mono- and diglycerides of fatty acids', note: 'One of the most common mashbooh additives — can be derived from animal or plant fat, and the source is almost never stated on ingredient labels.' },
+  'E472a': { status: 'MASHBOOH', name: 'Acetic acid esters of mono/diglycerides', note: 'Same sourcing ambiguity as E471.' },
+  'E472b': { status: 'MASHBOOH', name: 'Lactic acid esters of mono/diglycerides', note: 'Same sourcing ambiguity as E471.' },
+  'E472e': { status: 'MASHBOOH', name: 'Diacetyl tartaric acid esters of mono/diglycerides (DATEM)', note: 'Same sourcing ambiguity as E471.' },
+  'E476': { status: 'MASHBOOH', name: 'Polyglycerol polyricinoleate', note: 'Glycerol component can be animal or plant-derived.' },
+  'E483': { status: 'MASHBOOH', name: 'Stearyl tartrate', note: 'Stearic acid component can be animal or plant-derived.' },
+  'E542': { status: 'HARAM', name: 'Bone phosphate', note: 'Directly bone-derived, almost never from halal-slaughtered sources in commercial production.' },
+  'E570': { status: 'MASHBOOH', name: 'Fatty acids', note: 'Can be animal or plant-derived — source often unstated.' },
+  'E631': { status: 'MASHBOOH', name: 'Disodium inosinate', note: 'Can be derived from meat or fish extracts, or produced synthetically/from yeast — source often unstated.' },
+  'E635': { status: 'MASHBOOH', name: 'Disodium ribonucleotides', note: 'Same sourcing ambiguity as E631 — often a blend including E631.' },
+  'E904': { status: 'MASHBOOH', name: 'Shellac', note: 'Resin secreted by the lac insect — permissibility follows the same disputed insect-derivation question as E120.' },
+  'E920': { status: 'MASHBOOH', name: 'L-Cysteine', note: 'Commonly derived from duck/chicken feathers or human hair historically, though synthetic/plant-fermented sources exist — source almost never stated.' },
+  'E1105': { status: 'MASHBOOH', name: 'Lysozyme', note: 'Traditionally derived from egg white (halal) but occasionally other sources — usually fine, flagged for awareness.' },
+  'E1518': { status: 'MASHBOOH', name: 'Glyceryl triacetate (Triacetin)', note: 'Glycerol component can be animal or plant-derived.' }
+};
+
+function detectENumbers(text) {
+  const matches = [];
+  const regex = /\bE\s?-?\s?(\d{3,4}[a-z]?)\b/gi;
+  let m;
+  while ((m = regex.exec(text)) !== null) {
+    const code = 'E' + m[1].toUpperCase();
+    if (E_NUMBER_DATABASE[code] && !matches.find(x => x.code === code)) {
+      matches.push({ code, ...E_NUMBER_DATABASE[code] });
+    }
+  }
+  return matches;
+}
+
 function detectClassicalHaramTerms(text) {
   const t = text.toLowerCase();
   const terms = [];
@@ -546,7 +605,7 @@ async function callClaudeVision(env, system, messageContent, maxTokens) {
   return result.content?.find(b => b.type === 'text')?.text || '';
 }
 
-function buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock) {
+function buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock, eNumberBlock) {
   const langInstruction = lang === 'id'
     ? 'Jawab dalam Bahasa Indonesia yang jelas dan mudah dipahami.'
     : 'Answer in clear, simple English.';
@@ -556,15 +615,17 @@ function buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock) {
   return `You are a Halal Checker assistant. Your ruling MUST be grounded in the Quranic dietary law principles provided below, plus any retrieved Hadith. ` +
     `These are the core textual bases for every halal/haram food ruling — carrion, blood, swine/pork, anything slaughtered invoking other than Allah's name, and intoxicants are explicitly forbidden: \n${versesBlock}\n\n` +
     `${hadithBlock ? `Additional retrieved Hadith relevant to specific ingredients found:\n${hadithBlock}\n\n` : ''}` +
+    `${eNumberBlock ? `KNOWN E-NUMBER REFERENCE DATA (use this directly for these specific codes — do NOT re-derive their status yourself, this is our own curated reference):\n${eNumberBlock}\n\n` : ''}` +
     `RULES: ` +
     `1. If an ingredient is directly and unambiguously covered by the verses above (pork/swine, alcohol, blood, carrion) — mark it HARAM with high confidence, citing the specific verse. ` +
     `2. If an ingredient is a MODERN or AMBIGUOUS item not directly named in classical texts (E-numbers, "natural flavouring", emulsifiers, gelatin without a stated source, enzymes) — you cannot know its true source from ingredient text alone. Mark these as MASHBOOH (doubtful) and clearly explain WHY it's uncertain (e.g. "gelatin can be derived from pork or beef — source not stated on this label"), rather than guessing confidently either way. ` +
-    `3. Never state a modern ingredient is definitively HALAL or HARAM unless the retrieved verses/hadith or extremely well-established scholarly consensus (e.g. plain sugar, water, wheat flour are obviously halal) support that with certainty. ` +
-    `4. The overall product STATUS should be HARAM if any ingredient is definitively haram, MASHBOOH if any ingredient is ambiguous but nothing is definitively haram, HALAL only if everything is clearly permissible. ` +
-    `CRITICAL CITATION REQUIREMENT: every item in "flagged" MUST end its "reason" text with the exact reference in parentheses, e.g. "(Al-Baqarah 2:173)" if grounded in one of the verses above, or "(Sahih Bukhari #XXXX)" if grounded in a retrieved hadith. If an item is MASHBOOH due to genuine textual absence (a modern ingredient simply isn't addressed by classical sources), say so explicitly instead of inventing a reference — do NOT cite a verse/hadith that doesn't actually support that specific ingredient. Also populate the top-level "sources" array with every reference actually cited across all flagged items (e.g. ["Al-Baqarah 2:173", "Sahih Bukhari #5209"]) — if nothing was cited (e.g. an all-HALAL result with only obviously permissible ingredients), return an empty array. ` +
+    `3. Never state a modern ingredient is definitively HALAL or HARAM unless the retrieved verses/hadith, the E-number reference data above, or extremely well-established scholarly consensus (e.g. plain sugar, water, wheat flour are obviously halal) support that with certainty. ` +
+    `4. For any E-number listed in the KNOWN E-NUMBER REFERENCE DATA above, use its provided status and note directly rather than reasoning about it independently — cite it as "(E-number reference)" in the reason. ` +
+    `5. The overall product STATUS should be HARAM if any ingredient is definitively haram, MASHBOOH if any ingredient is ambiguous but nothing is definitively haram, HALAL only if everything is clearly permissible. ` +
+    `CRITICAL CITATION REQUIREMENT: every item in "flagged" MUST end its "reason" text with the exact reference in parentheses, e.g. "(Al-Baqarah 2:173)" if grounded in one of the verses above, "(Sahih Bukhari #XXXX)" if grounded in a retrieved hadith, or "(E-number reference)" if from the curated E-number data. If an item is MASHBOOH due to genuine textual absence (a modern ingredient simply isn't addressed by classical sources), say so explicitly instead of inventing a reference — do NOT cite a verse/hadith that doesn't actually support that specific ingredient. Also populate the top-level "sources" array with every reference actually cited across all flagged items (e.g. ["Al-Baqarah 2:173", "Sahih Bukhari #5209"]) — if nothing was cited (e.g. an all-HALAL result with only obviously permissible ingredients), return an empty array. ` +
     langInstruction +
     ` Respond ONLY with a JSON object (no markdown, no code fences): ` +
-    `{"status":"HALAL or HARAM or MASHBOOH","confidence":"HIGH or MEDIUM or LOW","summary":"1-2 sentence plain-language summary","flagged":[{"ingredient":"name","severity":"HARAM or MASHBOOH","reason":"why, ending with the exact citation in parentheses if grounded in a verse/hadith, or a clear explanation of uncertainty if not"}],"safe":["list of clearly permissible ingredient names"],"advice":"brief practical advice, e.g. suggest checking for official certification (MUI/JAKIM/MUIS/HMC) if uncertain","sources":["every verse/hadith reference actually cited above, e.g. Al-Baqarah 2:173 or Sahih Bukhari #5209 — empty array if none were needed"]}`;
+    `{"status":"HALAL or HARAM or MASHBOOH","confidence":"HIGH or MEDIUM or LOW","summary":"1-2 sentence plain-language summary","flagged":[{"ingredient":"name","severity":"HARAM or MASHBOOH","reason":"why, ending with the exact citation in parentheses if grounded in a verse/hadith/E-number reference, or a clear explanation of uncertainty if not"}],"safe":["list of clearly permissible ingredient names"],"advice":"brief practical advice, e.g. suggest checking for official certification (MUI/JAKIM/MUIS/HMC) if uncertain","sources":["every verse/hadith reference actually cited above, e.g. Al-Baqarah 2:173 or Sahih Bukhari #5209 — empty array if none were needed"]}`;
 }
 
 async function handleCheck(request, env) {
@@ -585,7 +646,7 @@ async function handleCheck(request, env) {
 
     if (content.type === 'image') {
       const dietaryVerses = await dietaryVersesPromise;
-      const sys = buildHalalSystemPrompt(lang, dietaryVerses, '');
+      const sys = buildHalalSystemPrompt(lang, dietaryVerses, '', '');
       messageContent = [
         { type: 'image', source: { type: 'base64', media_type: content.mediaType, data: content.data } },
         { type: 'text', text: 'Read the ingredients label in this image and determine if this product is Halal, Haram, or Mashbooh, following the rules and grounding in your system instructions.' }
@@ -595,6 +656,7 @@ async function handleCheck(request, env) {
       return new Response(JSON.stringify(parsed), { status: 200, headers: CORS_HEADERS });
     } else {
       const classicalTerms = detectClassicalHaramTerms(content.text);
+      const eNumberMatches = detectENumbers(content.text);
       const [dietaryVerses, ...hadithSearches] = await Promise.all([
         dietaryVersesPromise,
         ...classicalTerms.map(term => searchHadith(env, term))
@@ -605,7 +667,11 @@ async function handleCheck(request, env) {
         ? hadithResults.slice(0, 5).map(h => `- ${h.ref}: "${h.text}"`).join('\n')
         : '';
 
-      const sys = buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock);
+      const eNumberBlock = eNumberMatches.length
+        ? eNumberMatches.map(e => `- ${e.code} (${e.name}): ${e.status} — ${e.note}`).join('\n')
+        : '';
+
+      const sys = buildHalalSystemPrompt(lang, dietaryVerses, hadithBlock, eNumberBlock);
       const userText = `Ingredients list to check:\n${content.text}`;
       const raw = await callClaude(env, sys, userText, 1800);
 
